@@ -1,0 +1,86 @@
+<h1 class="text-center">Crear renta</h1>
+<form action="/casos/crear" method="POST">
+    <div class="form-group">
+        <label for="cliente_id">Cliente</label>
+        <select name="cliente_id" class="form-control" required>
+            <option value="">Seleccionar Cliente</option>
+            <% clientes.forEach(cliente => { %>
+                <option value="<%= cliente.id %>">
+                    <%= cliente.nombre %> <%= cliente.apellido %>
+                </option>
+            <% }); %>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="abogado_id">Encargado</label>
+        <select name="abogado_id" class="form-control" required>
+            <option value="">Seleccionar Encargado</option>
+            <% encargados.forEach(encargado => { %>
+                <option value="<%= encargado.id %>">
+                    <%= encargado.nombre %> <%= encargado.apellido %>
+                </option>
+            <% }); %>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="categorias">Categorías</label>
+        <% categorias.forEach(categoria => { %>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="categoria_id[]" value="<%= categoria.id %>" data-precio="<%= categoria.precio %>">
+                    <%= categoria.nombre %> - $<%= categoria.precio %>
+                </label>
+                <input type="number" name="categoria_cantidad[]" class="form-control" min="1" value="1">
+            </div>
+        <% }); %>
+    </div>
+    <div class="form-group">
+        <label for="descripcion">Ubicacion</label>
+        <textarea name="descripcion" class="form-control" placeholder="Ubicacion de entrega" 
+required></textarea>
+    </div>
+    <div class="form-group">
+        <label for="estado">Estado</label>
+        <select name="estado" class="form-control" required>
+            <option value="">Seleccionar Estado</option>
+            <option value="Abierto">Abierto</option>
+            <option value="Cerrado">Cerrado</option>
+            <option value="Pendiente">Pendiente</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="fecha_entrega">Fecha de Entrega</label>
+        <input type="datetime-local" name="fecha_entrega" class="form-control" required>
+    </div>
+    <div class="form-group">
+        <label for="fecha_devolucion">Fecha de Devolución</label>
+        <input type="datetime-local" name="fecha_devolucion" class="form-control" required>
+    </div>
+    <div class="form-group">
+        <label for="precio">Precio Total de renta</label>
+        <input type="number" name="precio" class="form-control" step="0.01" readonly>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Crear</button>
+</form>
+<a href="/casos" class="btn btn-danger mt-3 mb-3">Regresar</a>
+<script>
+    document.querySelectorAll('input[type="checkbox"], input[type="number"]').forEach(element => {
+        element.addEventListener('change', calcularPrecioTotal);
+    });
+
+    function calcularPrecioTotal() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        let totalPrecio = 0;
+
+        checkboxes.forEach((checkbox, index) => {
+            if (checkbox.checked) {
+                const precio = parseFloat(checkbox.getAttribute('data-precio'));
+                const cantidad = document.querySelectorAll('input[name="categoria_cantidad[]"]')[index].value;
+                totalPrecio += precio * cantidad;
+            }
+        });
+
+        document.querySelector('input[name="precio"]').value = totalPrecio.toFixed(2);
+    }
+</script>

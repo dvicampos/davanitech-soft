@@ -1,0 +1,122 @@
+<div class="container">
+    <h2 class="mb-4 text-center">Editar mi empresa</h2>
+    <form action="/edit-group" method="POST" enctype="multipart/form-data" class="bg-light p-5 rounded shadow">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <label for="foto_perfil" class="form-label">Foto de Perfil</label>
+                <div class="position-relative">
+                    <img src="/<%= grupo.foto_perfil %>" alt="Sin foto de Perfil" id="fotoPreview" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    <input type="file" class="form-control" id="foto_perfil" name="foto_perfil" onchange="mostrarImagen(event)" style="position: absolute; top: 0; left: 0; opacity: 0; width: 150px; height: 150px; border-radius: 50%; cursor: pointer;">
+                </div>
+                <small class="form-text text-muted text-center">Haz clic para cambiar la foto</small>
+                <input type="file" class="form-control" id="foto_perfil" name="foto_perfil">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="nombre_empresa" class="form-label">Nombre de la Empresa:</label>
+            <input type="text" class="form-control" id="nombre_empresa" name="nombre_empresa" value="<%= grupo.nombre_empresa %>" required>
+        </div>
+    
+        <div class="mb-3">
+            <label for="rubro" class="form-label">Rubro:</label>
+            <input type="text" class="form-control" id="rubro" name="rubro" value="<%= grupo.rubro %>" required>
+        </div>
+    
+        <div class="mb-3">
+            <label for="descripcion" class="form-label">Descripción:</label>
+            <textarea class="form-control" id="descripcion" name="descripcion" rows="4" required><%= grupo.descripcion %></textarea>
+        </div>
+    
+        <div class="mb-3">
+            <label for="ubicacion" class="form-label">Ubicación:</label>
+            <input type="text" class="form-control" id="ubicacion" name="ubicacion" value="<%= grupo.ubicacion %>" required>
+        </div>
+        <div class="mb-3">
+            <label for="horario" class="form-label">Horario:</label>
+            <input type="text" class="form-control" id="horario" name="horario" value="<%= grupo.horario %>" required>
+        </div>
+        <div class="mb-3">
+            <label for="telefono" class="form-label">Telefono:</label>
+            <input type="text" class="form-control" id="telefono" name="telefono" value="<%= grupo.telefono %>" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email:</label>
+            <input type="text" class="form-control" id="email" name="email" value="<%= grupo.email %>" required>
+        </div>
+        <div class="mb-3">
+            <label for="facebook" class="form-label">Facebook:</label>
+            <input type="text" class="form-control" id="facebook" name="facebook" value="<%= grupo.facebook %>">
+        </div>
+        <div class="mb-3">
+            <label for="tiktok" class="form-label">Tiktok:</label>
+            <input type="text" class="form-control" id="tiktok" name="tiktok" value="<%= grupo.tiktok %>">
+        </div>
+        <div class="mb-3">
+            <label for="terminos" class="form-label">Terminos y condiciones:</label>
+            <input type="text" class="form-control" id="terminos" name="terminos" value="<%= grupo.terminos %>">
+        </div>
+
+	<div class="mb-3">
+            <label for="color_grupo" class="form-label">Color del grupo:</label>
+            <input type="color" id="color_grupo" name="color_grupo" value="<%= grupo.color_grupo %>"/>
+        </div>
+
+	<div class="mb-3">
+            <label for="media" class="form-label">Agregar nuevas fotos/videos:</label>
+            <input type="file" name="media" multiple accept="image/*,video/*" />
+        </div>
+    
+        <div class="d-grid gap-2">
+            <a class="btn btn-danger" href="/dashboard">Regresar</a> 
+            <button type="submit" class="btn btn-primary">Actualizar grupo</button>
+            <a target="_blank" class="btn btn-warning text-white" href="/grupo/<%= grupo.id %>">Entrar a mi página</a>
+            <a href="/grupos/<%= grupo.id %>/qr" download="codigo_qr.png" class="btn btn-secondary">Descargar código QR</a>
+        </div>
+    </form>   
+	<div class="row mt-4">
+        <% if (media && media.length > 0) { %>
+            <% media.forEach(item => { %>
+                <div class="col-md-4 mb-3 text-center">
+                    <div class="card">
+                        <% if (item.tipo === 'imagen') { %>
+                            <img src="/<%= item.archivo %>" class="card-img-top" style="height: 200px; 
+object-fit: cover;">
+                        <% } else { %>
+                            <video controls class="card-img-top" style="height: 200px; object-fit: 
+cover;">
+                                <source src="/<%= item.archivo %>" type="video/mp4">
+                            </video>
+                        <% } %>
+                        <div class="card-body">
+                            <form action="/eliminar-media/<%= item.id %>" method="POST" 
+onsubmit="return confirm('¿Eliminar este archivo?')">
+                                <button class="btn btn-danger btn-sm" type="submit">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p>No hay archivos subidos aún.</p>
+        <% } %>
+    </div> 
+</div>
+
+<script>
+    function mostrarImagen(event) {
+        const archivo = event.target.files[0];
+        const vistaPrevia = document.getElementById('fotoPreview');
+
+        if (archivo) {
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                vistaPrevia.src = e.target.result;
+            };
+            lector.readAsDataURL(archivo);
+        }
+    }
+</script>
+

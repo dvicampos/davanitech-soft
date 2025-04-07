@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura - ALQUILADORA <%= grupo.nombre_empresa %></title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2px;
+	    font-size: 12px;
+   	    line-height: 1.5;
+        }
+        .container {
+            margin: auto;
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+        h1,h2 {
+            text-align: center;
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 1px;
+            font-weight: bold;
+        }
+        .table-container {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2px;
+        }
+        .table-container th, .table-container td {
+            border: 1px solid #ddd;
+            padding: 1px;
+            text-align: left;
+        }
+        .table-container th {
+            background-color: #007bff;
+            color: white;
+        }
+        .total {
+            text-align: right;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><%= grupo.nombre_empresa %> - Ticket de renta</h1>
+        <table class="table-container">
+            <tr>
+                <th>Informacion <%= grupo.nombre_empresa %></th>
+                <th>Detalles</th>
+            </tr>
+            <tr>
+                <td>Teléfono de <%= grupo.nombre_empresa %></td>
+                <td><%= grupo.telefono %></td>
+            </tr>
+            <tr>
+                <td>Correo electrónico de <%= grupo.nombre_empresa %></td>
+                <td><%= grupo.email %></td>
+            </tr>
+            <tr>
+                <td>Encargado</td>
+                <td><%= caso.encargado_nombre %> <%= caso.encargado_apellido %></td>
+            </tr>
+            <tr>
+                <td>Direccion de <%= grupo.nombre_empresa %></td>
+                <td><%= grupo.ubicacion %></td>
+            </tr>
+                <th>Informacion cliente</th>
+                <th>Detalles</th>
+            </tr>
+            <tr>
+                <td>Número de nota</td>
+                <td><%= caso.id %></td>
+            </tr>
+            <tr>
+                <td>Nota para</td>
+                <td><%= caso.cliente_nombre %> <%= caso.cliente_apellido %></td>
+            </tr>
+            <tr>
+                <td>Teléfono</td>
+                <td><%= caso.cliente_telefono %></td>
+            </tr>
+            <tr>
+                <td>Dirección</td>
+                <td><%= caso.descripcion %></td>
+            </tr>
+            <tr>
+                <td>Fecha de la nota</td>
+                <td><%= new Date(caso.fecha_creacion).toLocaleString() %></td>
+            </tr>
+            <tr>
+                <td>Fecha de entrega</td>
+                <td><%= new Date(caso.fecha_entrega).toLocaleString() %></td>
+            </tr>
+            <tr>
+                <td>Fecha de devolucion</td>
+                <td><%= new Date(caso.fecha_devolucion).toLocaleString() %></td>
+            </tr>
+            <tr>
+                <td>Status pedido</td>
+                <td><%= caso.estado %></td>
+            </tr>
+        </table>
+
+        <h2>Detalles de servicio</h2>
+        <table class="table-container">
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th>Cantidad</th>
+                    <th>Precio por unidad</th>
+                    <th>Precio total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% caso.categorias_nombres.split(', ').forEach((categoria, index) => { %>
+                    <tr>
+                        <td><%= categoria %></td>
+                        <td><%= caso.categorias_cantidades.split(', ')[index] %></td>
+                        <td>$<%= caso.categorias_precios.split(', ')[index] %></td>
+                        <td>$<%= (parseFloat(caso.categorias_precios.split(', ')[index]) * 
+parseInt(caso.categorias_cantidades.split(', ')[index])).toFixed(2) %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        <p class="total">Total a pagar: <strong>$<%= caso.precio %></strong></p>
+        <p class="total">Depósito recibido: <strong>$_____________</strong></p>
+        
+        <p><strong>Código QR de mi venta:</strong></p>
+        <img src="<%= qrCodeUrl %>" alt="Código QR">
+        
+        <div>
+            <p><%= grupo.terminos %></p>
+        </div> 
+        <h2>Derechos reservados <%= grupo.nombre_empresa %>.</h2> 
+    </div>
+</body>
+</html>
+

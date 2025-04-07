@@ -1,0 +1,21 @@
+<h1>Crear categoría</h1>
+<form action="/categorias/crear" method="POST">
+    <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input type="text" name="nombre" class="form-control" required>
+    </div>
+    <div class="form-group">
+        <label for="precio">Precio</label>
+        <input type="number" step="0.01" name="precio" class="form-control" required>
+    </div>
+    <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea name="descripcion" class="form-control" required></textarea>
+    </div>
+    <div class="form-group">
+        <label for="stock">Stock</label>
+        <input type="number" name="stock" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Crear</button>
+</form>
+<a href="/categorias" class="btn btn-danger mt-3 mb-3">Regresar</a>

@@ -1,0 +1,1770 @@
+const db = require('../models/db');
+const bcrypt = require('bcrypt');
+const pdf = require('html-pdf');
+const QRCode = require('qrcode');
+const multer = require('multer');
+const path = require('path');
+const { createCanvas, loadImage } = require('canvas');
+
+exports.index = (req, res) => {
+    res.render('inicio', {layout: false});
+}
+
+exports.dashboard = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id; 
+    const rol = req.session.encargado.especialidad;
+
+    db.query(
+        `SELECT * FROM recordatorios WHERE grupo_id = ?`, 
+        [grupo_id], 
+        (err, recordatorios) => {
+            if (err) {
+                console.error('Error al obtener los recordatorios:', err);
+                return res.status(500).send('Error al obtener los recordatorios.');
+            }
+
+            db.query(
+                `SELECT encargados.nombre, encargados.apellido, grupos.* 
+                FROM encargados 
+                LEFT JOIN grupos ON encargados.grupo_id = grupos.id 
+                WHERE encargados.id = ?`,
+                [req.session.encargadoId],
+                (err, results) => {
+                    if (err) {
+                        console.error('Error al obtener los datos del usuario:', err);
+                        return res.status(500).send('Error al obtener los datos del usuario.');
+                    }
+
+                    if (results.length === 0) {
+                        return res.redirect('/login');
+                    }
+
+                    const usuario = results[0];
+                    const grupo = results[0];
+
+                    res.render('index', { 
+                        recordatorios, 
+                        usuario,
+                        grupo,
+                        rol : rol
+                    });
+                }
+            );
+        }
+    );
+};
+
+// Registro de abogados
+exports.register = (req, res) => {
+    db.query('SELECT * FROM grupos', (err, grupos) => {
+        if (err) {
+            console.error(err);
+            return res.render('register', { layout: false, grupos: [] });
+        }
+        res.render('register', { layout: false, grupos });
+    });
+};
+
+// Ingreso de encargados
+exports.login = (req, res) => {
+    res.render('login', {layout: false});
+};
+
+exports.loginPost = (req, res) => {
+    const { email, password } = req.body;
+
+    db.query('SELECT * FROM encargados WHERE email = ?', [email], async (err, results) => {
+        if (err || results.length === 0) {
+            return res.redirect('/login');
+        }
+        const encargado = results[0];
+        const match = await bcrypt.compare(password, encargado.password);
+        if (match) {
+            req.session.encargadoId = encargado.id;
+            req.session.encargado = {
+                id: encargado.id,
+                nombre: encargado.nombre,
+                apellido: encargado.apellido,
+                especialidad: encargado.especialidad,
+                grupo_id: encargado.grupo_id,
+            };
+            res.redirect('/dashboard');
+        } else {
+            res.redirect('/login');
+        }
+    });
+};
+
+exports.createGroup = (req, res) => {
+    res.render('createGroup', { layout: false });
+};
+
+exports.createGroupPost = (req, res) => {
+    const { nombre_empresa, rubro, descripcion, ubicacion, horario, telefono, email, facebook, tiktok } = req.body;
+
+    db.query('INSERT INTO grupos (nombre_empresa, rubro, descripcion, ubicacion, horario, telefono, email, facebook, tiktok) VALUES (?, ?, ?, ?, ?, ?, ? ,?, ?)',
+        [nombre_empresa, rubro, descripcion, ubicacion, horario, telefono, email, facebook, tiktok],
+        (err, results) => {
+            if (err) {
+                console.error(err);
+                return res.redirect('/create-group');
+            }
+            res.redirect('/register');
+        }
+    );
+};
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/uploads');
+    },
+    filename: (req, file, cb) => {
+        const fileExtension = path.extname(file.originalname); 
+        const fileName = Date.now() + fileExtension; 
+        cb(null, fileName);
+    }
+});
+
+const upload = multer({ storage: storage });
+const fs = require('fs');
+
+exports.editGroup = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    const grupoQuery = 'SELECT * FROM grupos WHERE id = ?';
+    const mediaQuery = 'SELECT * FROM media WHERE grupo_id = ?';
+
+    db.query(grupoQuery, [grupo_id], (err, grupoResults) => {
+        if (err || grupoResults.length === 0) {
+            console.error('Error al obtener grupo:', err);
+            return res.render('mensaje', { layout: false, mensaje: 'Error al obtener el grupo.', tipo: 'error' });
+        }
+
+        const grupo = grupoResults[0];
+
+        db.query(mediaQuery, [grupo_id], (err, mediaResults) => {
+            if (err) {
+                console.error('Error al obtener archivos multimedia:', err);
+                return res.render('mensaje', { layout: false, mensaje: 'Error al obtener archivos multimedia, favor de revisar que sean archivos permitidos.', tipo: 'error' });
+            }
+
+            res.render('editGroup', {
+                grupo,
+                media: mediaResults 
+            });
+        });
+    });
+};
+
+exports.deleteMedia = (req, res) => {
+    const mediaId = req.params.id;
+
+    const querySelect = 'SELECT archivo FROM media WHERE id = ?';
+    db.query(querySelect, [mediaId], (err, results) => {
+        if (err || results.length === 0) {
+            return res.render('mensaje', { layout: false, mensaje: 'Error al buscar el archivo.', tipo: 'error' });
+        }
+
+        const filePath = path.join(__dirname, '..', results[0].archivo);
+        fs.unlink(filePath, (unlinkErr) => {
+            if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+                console.error('Error al borrar archivo físico:', unlinkErr);
+            }
+
+            const queryDelete = 'DELETE FROM media WHERE id = ?';
+            db.query(queryDelete, [mediaId], (err) => {
+                if (err) {
+                    console.error('Error al eliminar de la BD:', err);
+                }
+                res.redirect('/dashboard');
+            });
+        });
+    });
+};
+
+
+exports.updateGroup = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    upload.fields([
+        { name: 'foto_perfil', maxCount: 1 },
+        { name: 'media', maxCount: 10 }
+    ])(req, res, (err) => {
+        if (err) {
+            console.error('Error al subir archivos:', err);
+            // return res.status(500).send('Error al subir archivos.');
+            return res.render('mensaje', { layout: false, mensaje: 'Error al subir archivos.', tipo: 'error' });
+        }
+
+        const {
+            nombre_empresa, rubro, descripcion, ubicacion,
+            horario, telefono, email, facebook, tiktok, terminos, color_grupo
+        } = req.body;
+
+        const foto_perfil = req.files['foto_perfil']?.[0]?.filename
+            ? 'uploads/' + req.files['foto_perfil'][0].filename
+            : null;
+
+        if (!nombre_empresa || !rubro || !descripcion || !ubicacion || !horario || !telefono || !email) {
+            // return res.status(400).send('Todos los campos son obligatorios.');
+            return res.render('mensaje', { layout: false, mensaje: 'Los campos con * son obligatorios.', tipo: 'error' });
+        }
+
+        let query = 'UPDATE grupos SET nombre_empresa = ?, rubro = ?, descripcion = ?, ubicacion = ?, horario= ?, telefono= ?, email= ?, facebook= ?, tiktok= ?, terminos= ?, color_grupo =?';
+        let queryParams = [nombre_empresa, rubro, descripcion, ubicacion, horario, telefono, email, facebook, tiktok, terminos,color_grupo];
+
+        if (foto_perfil) {
+            query += ', foto_perfil = ?';
+            queryParams.push(foto_perfil);
+        }
+
+        query += ' WHERE id = ?';
+        queryParams.push(grupo_id);
+
+        db.query(query, queryParams, (err) => {
+            if (err) {
+                console.error('Error al actualizar el grupo:', err);
+                // return res.status(500).send('Error al actualizar el grupo.');
+                return res.render('mensaje', { layout: false, mensaje: 'Error al actualizar el grupo, revise su datos ingresados.', tipo: 'error' });
+            }
+
+            // Guardar archivos multimedia en tabla media si hay
+            if (req.files['media']) {
+                const insertMedia = 'INSERT INTO media (grupo_id, archivo, tipo) VALUES ?';
+                const values = req.files['media'].map(file => {
+                    const tipo = file.mimetype.startsWith('video/') ? 'video' : 'imagen';
+                    return [grupo_id, 'uploads/' + file.filename, tipo];
+                });
+
+                db.query(insertMedia, [values], (err) => {
+                    if (err) {
+                        console.error('Error al guardar archivos multimedia:', err);
+                    }
+                    return res.redirect('/dashboard');
+                });
+            } else {
+                return res.redirect('/dashboard');
+            }
+        });
+    });
+};
+
+exports.showGroup = (req, res) => {
+    const grupo_id = req.params.id;
+
+    if (!grupo_id) {
+        return res.render('mensaje', { layout: false, mensaje: 'Error al obtener grupo.', tipo: 'error' });
+    }
+
+    const queryGrupo = 'SELECT * FROM grupos WHERE id = ?';
+    const queryMedia = 'SELECT * FROM media WHERE grupo_id = ?';
+
+    db.query(queryGrupo, [grupo_id], (err, grupoResults) => {
+        if (err) {
+            console.error('Error al obtener el grupo:', err);
+            return res.render('mensaje', { layout: false, mensaje: 'Error al obtener informacion del grupo.', tipo: 'error' });
+        }
+
+        if (grupoResults.length === 0) {
+            return res.render('mensaje', { layout: false, mensaje: 'Grupo no encontrado.', tipo: 'error' });
+        }
+
+        const grupo = grupoResults[0];
+
+        // Consultar archivos multimedia
+        db.query(queryMedia, [grupo_id], (err, mediaResults) => {
+            if (err) {
+                console.error('Error al obtener archivos multimedia:', err);
+                return res.render('mensaje', { layout: false, mensaje: 'Error al obteenr archivos multimedia.', tipo: 'error' });
+            }
+
+            res.render('grupo', {
+                layout: false,
+                grupo,
+                media: mediaResults
+            });
+        });
+    });
+};
+
+exports.downloadQRCode = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    const url = `${req.protocol}://${req.get('host')}/grupo/${grupo_id}`;
+
+    QRCode.toBuffer(url, { type: 'png' }, (err, buffer) => {
+        if (err) {
+            console.error('Error al generar el código QR:', err);
+            return res.status(500).send('Error al generar el código QR.');
+        }
+
+        res.setHeader('Content-Disposition', `attachment; filename=grupo_${grupo_id}_qr.png`);
+        res.setHeader('Content-Type', 'image/png');
+        res.send(buffer);
+    });
+};
+
+/*
+exports.registerPost = async (req, res) => {
+    const { nombre, apellido, email, telefono, especialidad, password, grupo_id } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    db.query('INSERT INTO encargados (nombre, apellido, email, telefono, especialidad, password, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [nombre, apellido, email, telefono, especialidad, hashedPassword, grupo_id], (err, results) => {
+            if (err) {
+                console.error(err);
+                return res.redirect('/register');
+            }
+
+            const encargadoId = results.insertId;
+            if (grupo_id) {
+                db.query('INSERT INTO grupo_encargado (grupo_id, encargado_id) VALUES (?, ?)',
+                    [grupo_id, encargadoId],
+                    (err) => {
+                        if (err) {
+                            console.error(err);
+                        }
+                    });
+            }
+            res.redirect('/login');
+        });
+};
+*/
+
+
+const MercadoPago = require("mercadopago");
+
+// Configurar Mercado Pago
+const mercadopago = new MercadoPago.MercadoPagoConfig({
+    accessToken: "APP_USR-4675870761323737-032102-ed9b3ec372a024643003287ad603c6b2-1166673182"
+});
+
+const preferenceClient = new MercadoPago.Preference(mercadopago);
+
+exports.registerPost = async (req, res) => {
+    const { nombre, apellido, email, telefono, especialidad, password, grupo_id } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const preference = {
+        items: [{
+            title: "Suscripción unica",
+            quantity: 1,
+            currency_id: "MXN",
+            unit_price: 1000
+        }],
+        payer: { email },
+        back_urls: {
+            success: 
+`https://davanitechnology.com/payment-success?nombre=${nombre}&apellido=${apellido}&email=${email}&telefono=${telefono}&especialidad=${especialidad}&password=${hashedPassword}&grupo_id=${grupo_id}`,
+            failure: "https://davanitechnology.com//payment-failure",
+            pending: "https://davanitechnology.com//payment-pending"
+        },
+        auto_return: "approved"
+    };
+
+    preferenceClient.create({ body: preference })
+        .then(response => {
+            res.redirect(response.init_point); // Redirige al pago
+        })
+        .catch(error => {
+            console.error(error);
+            res.redirect('/register');
+        });
+};
+
+// Manejar el éxito del pago y registrar usuario
+exports.paymentSuccess = async (req, res) => {
+    const { collection_status, nombre, apellido, email, telefono, especialidad, password, grupo_id } = req.query;
+
+    if (collection_status === 'approved') {
+        db.query('INSERT INTO encargados (nombre, apellido, email, telefono, especialidad, password, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [nombre, apellido, email, telefono, especialidad, password, grupo_id], (err, results) => {
+                if (err) {
+                    console.error(err);
+                    return res.redirect('/register');
+                }
+
+                const encargadoId = results.insertId;
+                if (grupo_id) {
+                    db.query('INSERT INTO grupo_encargado (grupo_id, encargado_id) VALUES (?, ?)',
+                        [grupo_id, encargadoId], (err) => {
+                            if (err) {
+                                console.error(err);
+                            }
+                        });
+                }
+                res.redirect('/login'); // Registro exitoso, redirige a login
+            });
+    } else {
+        res.redirect('/register'); // Si el pago no fue aprobado, vuelve a registrar
+    }
+};
+
+
+// Cerrar sesión
+exports.logout = (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            console.error(err);
+        }
+        res.redirect('/');
+    });
+};
+
+// CLIENTES 
+exports.clientes = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.redirect('/crearCliente');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    const rol = req.session.encargado.especialidad;
+
+    db.query(
+        'SELECT * FROM grupos WHERE id = ?',
+        [grupo_id],
+        (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                console.error('Grupo no encontrado');
+                return res.status(404).send('Grupo no encontrado');
+            }
+
+            const grupo = grupoResults[0]; 
+
+            const sql = `
+                SELECT clientes.*, grupos.nombre_empresa AS grupo_nombre
+                FROM clientes
+                LEFT JOIN grupos ON clientes.grupo_id = grupos.id
+                WHERE clientes.grupo_id = ?
+            `;
+
+            db.query(sql, [grupo_id], (err, clienteResults) => {
+                if (err) {
+                    console.error('Error al obtener clientes:', err);
+                    return res.status(500).send('Error al obtener clientes');
+                }
+
+                res.render('clientes', { clientes: clienteResults, grupo: grupo, rol: rol });
+            });
+        }
+    );
+};
+
+
+exports.crearCliente = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.redirect('/login');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el grupo:', err);
+            return res.status(500).send('Error al obtener el grupo.');
+        }
+
+        if (results.length === 0) {
+            console.error('Grupo no encontrado');
+            return res.status(404).send('Grupo no encontrado');
+        }
+
+        const grupo = results[0]; 
+
+        res.render('crearCliente', { grupo: grupo });
+    });
+};
+
+
+exports.crearClientePost = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.redirect('/crearCliente');
+    }
+
+    const { nombre, apellido, email, telefono, direccion } = req.body;
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query(
+        'INSERT INTO clientes (nombre, apellido, email, telefono, direccion, grupo_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [nombre, apellido, email, telefono, direccion, grupo_id],
+        (err, results) => {
+            if (err) {
+                console.error(err);
+                return res.redirect('/crearCliente');
+            }
+
+            res.redirect('/clientes');
+        }
+    );
+};
+
+
+exports.editarCliente = (req, res) => {
+    const { id } = req.params;
+
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query('SELECT * FROM clientes WHERE id = ?', [id], (err, results) => {
+        if (err) throw err;
+        const cliente = results[0];
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0];
+
+            res.render('editarCliente', { cliente, grupo: grupo });
+        });
+    });
+};
+
+
+exports.editarClientePost = (req, res) => {
+    const { id } = req.params;
+    const { nombre, apellido, email, telefono, direccion } = req.body;
+    db.query('UPDATE clientes SET nombre = ?, apellido = ?, email = ?, telefono = ?, direccion = ? WHERE id = ?',
+        [nombre, apellido, email, telefono, direccion, id], (err) => {
+            if (err) throw err;
+            res.redirect('/clientes');
+        });
+};
+
+exports.eliminarCliente = (req, res) => {
+    const { id } = req.params;
+
+    db.query('DELETE FROM casos WHERE cliente_id = ?', [id], (err) => {
+        if (err) {
+            console.error('Error al eliminar relaciones en casos:', err);
+            return res.status(500).send('Error al eliminar relaciones del cliente');
+        }
+        db.query('DELETE FROM clientes WHERE id = ?', [id], (err) => {
+            if (err) {
+                console.error('Error al eliminar el cliente:', err);
+                return res.status(500).send('Error al eliminar el cliente');
+            }
+
+            res.redirect('/clientes');
+        });
+    });
+};
+
+// encargados
+exports.encargados = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    const rol = req.session.encargado.especialidad;
+
+    const query = `
+        SELECT encargados.*, grupos.nombre_empresa AS grupo_nombre 
+        FROM encargados 
+        LEFT JOIN grupos ON encargados.grupo_id = grupos.id
+        WHERE encargados.grupo_id = ?
+    `;
+
+    db.query(query, [grupo_id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener encargados:', err);
+            return res.status(500).send('Error al obtener encargados');
+        }
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0]; 
+
+            res.render('encargados', { encargados: results, grupo, rol: rol });
+        });
+    });
+};
+
+
+
+exports.crearEncargado = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+        if (err) {
+            console.error('Error al obtener el grupo:', err);
+            return res.status(500).send('Error al obtener el grupo.');
+        }
+
+        if (grupoResults.length === 0) {
+            return res.status(404).send('Grupo no encontrado.');
+        }
+
+        const grupo = grupoResults[0]; 
+
+        res.render('crearEncargado', { grupo });
+    });
+};
+
+
+exports.crearEncargadoPost = async (req, res) => {
+    const { nombre, apellido, email, telefono, especialidad, password } = req.body;
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.redirect('/crearCliente');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    db.query('INSERT INTO encargados (nombre, apellido, email, telefono, especialidad, password, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [nombre, apellido, email, telefono, especialidad, hashedPassword, grupo_id], (err) => {
+            if (err) throw err;
+            res.redirect('/encargados');
+        });
+};
+
+exports.editarEncargado = (req, res) => {
+    const { id } = req.params;
+    
+    db.query('SELECT * FROM encargados WHERE id = ?', [id], (err, encargadoResults) => {
+        if (err) return res.status(500).send('Error en la base de datos');
+        if (encargadoResults.length === 0) return res.status(404).send('Encargado no encontrado');
+
+        const encargado = encargadoResults[0];
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [encargado.grupo_id], (err, grupoResults) => {
+            if (err) return res.status(500).send('Error al obtener el grupo');
+            if (grupoResults.length === 0) return res.status(404).send('Grupo no encontrado');
+
+            const grupo = grupoResults[0];
+
+            res.render('editarEncargado', { encargado, grupo });
+        });
+    });
+};
+
+
+exports.editarEncargadoPost = async (req, res) => {
+    const { id } = req.params;
+    const { nombre, apellido, email, telefono, especialidad, password } = req.body;
+    
+    let query = `
+        UPDATE encargados 
+        SET nombre = ?, apellido = ?, email = ?, telefono = ?, especialidad = ?
+    `;
+    
+    const values = [nombre, apellido, email, telefono, especialidad];
+
+    if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        query += `, password = ?`;
+        values.push(hashedPassword);
+    }
+
+    query += ` WHERE id = ?`;
+    values.push(id);
+
+    db.query(query, values, (err) => {
+        if (err) {
+            console.error('Error al actualizar el encargado:', err);
+            return res.status(500).send('Error al actualizar el encargado');
+        }
+        res.redirect('/encargados');
+    });
+};
+
+
+exports.eliminarEncargado = (req, res) => {
+    const { id } = req.params;
+    db.query('DELETE FROM encargados WHERE id = ?', [id], (err) => {
+        if (err) throw err;
+        res.redirect('/encargados');
+    });
+};
+
+
+// CASOS 
+exports.casos = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    const rol = req.session.encargado.especialidad;
+
+    const query = `
+        SELECT 
+            casos.id AS caso_id, 
+            clientes.nombre AS cliente_nombre, 
+            encargados.nombre AS abogado_nombre, 
+            grupos.nombre_empresa AS grupo_nombre, 
+            GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
+            casos.descripcion, 
+            casos.estado,
+            casos.precio,
+            casos.fecha_entrega,
+            casos.fecha_devolucion
+        FROM 
+            casos 
+        JOIN 
+            clientes ON casos.cliente_id = clientes.id 
+        JOIN 
+            encargados ON casos.abogado_id = encargados.id 
+        LEFT JOIN 
+            grupos ON casos.grupo_id = grupos.id 
+        JOIN 
+            caso_categorias ON casos.id = caso_categorias.caso_id 
+        JOIN 
+            categorias ON caso_categorias.categoria_id = categorias.id
+        WHERE 
+            casos.grupo_id = ?
+        GROUP BY 
+            casos.id, clientes.nombre, encargados.nombre, grupos.nombre_empresa, casos.descripcion, casos.estado, casos.precio, casos.fecha_entrega, casos.fecha_devolucion
+    `;
+
+    db.query(query, [grupo_id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener los casos:', err);
+            return res.status(500).send('Error al obtener los casos.');
+        }
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0]; 
+
+            res.render('casos', { casos: results, grupo, rol: rol });
+        });
+    });
+};
+
+exports.casoIndividual = (req, res) => {
+    const casoId = req.params.id;
+
+    const query = `
+        SELECT 
+            casos.id AS caso_id, 
+            clientes.nombre AS cliente_nombre, 
+            clientes.apellido AS cliente_apellido,
+            encargados.nombre AS abogado_nombre, 
+            encargados.apellido AS abogado_apellido, 
+            grupos.nombre_empresa AS grupo_nombre,
+            grupos.email AS grupo_email,
+            grupos.telefono AS grupo_telefono,
+            GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
+            GROUP_CONCAT(caso_categorias.cantidad SEPARATOR ', ') AS categorias_cantidades, 
+            casos.descripcion, 
+            casos.estado,
+            casos.fecha_entrega, 
+            casos.fecha_devolucion,
+            casos.precio
+        FROM 
+            casos 
+        JOIN 
+            clientes ON casos.cliente_id = clientes.id 
+        JOIN 
+            encargados ON casos.abogado_id = encargados.id 
+        LEFT JOIN 
+            grupos ON casos.grupo_id = grupos.id
+        JOIN 
+            caso_categorias ON casos.id = caso_categorias.caso_id 
+        JOIN 
+            categorias ON caso_categorias.categoria_id = categorias.id
+        WHERE 
+            casos.id = ?
+        GROUP BY 
+            casos.id, clientes.nombre, clientes.apellido, encargados.nombre, encargados.apellido, grupos.nombre_empresa, grupos.email, grupos.telefono, casos.descripcion, casos.estado, casos.fecha_entrega, casos.fecha_devolucion, casos.precio
+    `;
+
+    db.query(query, [casoId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el caso:', err);
+            return res.status(500).send('Error al obtener el caso.');
+        }
+
+        if (results.length > 0) {
+            res.render('casoIndividual', { caso: results[0], grupo: { nombre_empresa: results[0].grupo_nombre, email: results[0].grupo_email, telefono: results[0].grupo_telefono }, layout: false });
+        } else {
+            res.status(404).send('Caso no encontrado');
+        }
+    });
+};
+
+exports.crearCasoPost = (req, res) => {
+    const { cliente_id, abogado_id, descripcion, estado, categoria_id, categoria_cantidad, fecha_entrega, fecha_devolucion } = req.body;
+
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.redirect('/crearCliente');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    const categoriasArray = Array.isArray(categoria_id) ? categoria_id : [categoria_id];
+    const cantidadesArray = Array.isArray(categoria_cantidad) ? categoria_cantidad : [categoria_cantidad];
+
+    db.query('SELECT id, nombre, precio, stock FROM categorias WHERE id IN (?)', [categoriasArray], (err, resultados) => {
+        if (err) {
+            console.error('Error al obtener precios y stock de categorías:', err);
+            // return res.status(500).send('Error al obtener precios y stock de categorías.');
+            return res.render('mensaje', { layout: false, mensaje: 'Error al obtener precios y stock de categorías.', tipo: 'error' });
+        }
+
+        // Verificar si hay suficiente stock
+        for (let i = 0; i < categoriasArray.length; i++) {
+            const categoria = resultados.find(c => c.id == categoriasArray[i]);
+            if (!categoria || categoria.stock < cantidadesArray[i]) {
+                return res.render('mensaje', { layout: false, mensaje: `Stock insuficiente para la categoría "${categoria ? categoria.nombre : 'desconocida'}"`, tipo: 'warning' });
+            }
+        }
+
+        let precioTotal = 0;
+        resultados.forEach((categoria, index) => {
+            const cantidad = parseFloat(cantidadesArray[index]);
+            precioTotal += categoria.precio * cantidad;
+        });
+
+        precioTotal = precioTotal.toFixed(2);
+
+        db.query('INSERT INTO casos (cliente_id, abogado_id, descripcion, estado, precio, fecha_entrega, fecha_devolucion, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [cliente_id, abogado_id, descripcion, estado, precioTotal, fecha_entrega, fecha_devolucion, grupo_id], (err, result) => {
+                if (err) {
+                    console.error('Error al insertar el caso:', err);
+                    return res.render('mensaje', { layout: false, mensaje: 'Error al insertar el caso.', tipo: 'error' });
+                    // return res.status(500).send('Error al insertar el caso.');
+                }
+
+                const casoId = result.insertId;
+                const categoriaQueries = categoriasArray.map((categoriaId, index) => {
+                    const cantidad = parseFloat(cantidadesArray[index]);
+
+                    return new Promise((resolve, reject) => {
+                        // Insertar en caso_categorias
+                        db.query('INSERT INTO caso_categorias (caso_id, categoria_id, cantidad, grupo_id) VALUES (?, ?, ?, ?)', 
+                            [casoId, categoriaId, cantidad, grupo_id], (err) => {
+                                if (err) {
+                                    console.error('Error al insertar en caso_categorias:', err);
+                                    reject(err);
+                                } else {
+                                    // Restar el stock en la tabla categorias
+                                    db.query('UPDATE categorias SET stock = stock - ? WHERE id = ?', 
+                                        [cantidad, categoriaId], (err) => {
+                                            if (err) {
+                                                console.error('Error al actualizar el stock:', err);
+                                                reject(err);
+                                            } else {
+                                                resolve();
+                                            }
+                                        });
+                                }
+                            });
+                    });
+                });
+
+                Promise.all(categoriaQueries)
+                    .then(() => {
+                        console.log('Caso y stock actualizados correctamente.');
+                        res.redirect('/casos');
+                    })
+                    .catch(err => {
+                        console.error('Error al procesar las categorías:', err);
+                        res.status(500).send('Error al procesar las categorías.');
+                    });
+            });
+    });
+};
+
+exports.cerrarPedido = (req, res) => {
+    const { caso_id } = req.body;
+    
+    if (!caso_id) {
+        return res.render('mensaje', { layout: false, mensaje: 'El ID del caso es requerido.', tipo: 'error' });
+    }
+
+    db.query('SELECT estado FROM casos WHERE id = ?', [caso_id], (err, resultados) => {
+        if (err) {
+            console.error('Error al obtener el caso:', err);
+            return res.render('mensaje', { layout: false, mensaje: 'Error al obtener el caso.', tipo: 'error' });
+        }
+
+        if (resultados.length === 0) {
+            return res.render('mensaje', { layout: false, mensaje: 'Caso no encontrado.', tipo: 'error' });
+        }
+
+        if (resultados[0].estado === 'Cerrado') {
+            return res.render('mensaje', { layout: false, mensaje: 'El caso ya está cerrado.', tipo: 'warning' });
+        }
+
+        db.query('SELECT categoria_id, cantidad FROM caso_categorias WHERE caso_id = ?', [caso_id], (err, categorias) => {
+            if (err) {
+                console.error('Error al obtener las categorías del caso:', err);
+                return res.render('mensaje', { layout: false, mensaje: 'Error al obtener las categorías del caso.', tipo: 'error' });
+            }
+
+            if (categorias.length === 0) {
+                return res.render('mensaje', { layout: false, mensaje: 'No hay categorías asociadas a este caso.', tipo: 'warning' });
+            }
+
+            const updateStockQueries = categorias.map(({ categoria_id, cantidad }) => {
+                return new Promise((resolve, reject) => {
+                    db.query('UPDATE categorias SET stock = stock + ? WHERE id = ?', [cantidad, categoria_id], (err) => {
+                        if (err) {
+                            console.error(`Error al actualizar el stock de la categoría ${categoria_id}:`, err);
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
+                    });
+                });
+            });
+
+            Promise.all(updateStockQueries)
+                .then(() => {
+                    db.query('UPDATE casos SET estado = ? WHERE id = ?', ['Cerrado', caso_id], (err) => {
+                        if (err) {
+                            console.error('Error al cerrar el caso:', err);
+                            return res.render('mensaje', { layout: false, mensaje: 'Error al cerrar el caso.', tipo: 'error' });
+                        }
+                        console.log('Caso cerrado y stock actualizado correctamente.');
+                        return res.render('mensaje', { layout: false, mensaje: 'Caso cerrado exitosamente y stock actualizado.', tipo: 'success' });
+                    });
+                })
+                .catch(err => {
+                    console.error('Error al actualizar el stock:', err);
+                    return res.render('mensaje', { layout: false, mensaje: 'Error al actualizar el stock.', tipo: 'error' });
+                });
+        });
+    });
+};
+
+
+exports.crearCaso = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query('SELECT * FROM clientes WHERE grupo_id = ?', [grupo_id], (err, clientes) => {
+        if (err) {
+            console.error('Error al obtener clientes:', err);
+            return res.status(500).send('Error al obtener clientes.');
+        }
+
+        db.query('SELECT * FROM encargados WHERE grupo_id = ?', [grupo_id], (err, encargados) => {
+            if (err) {
+                console.error('Error al obtener encargados:', err);
+                return res.status(500).send('Error al obtener encargados.');
+            }
+
+            db.query('SELECT * FROM categorias WHERE grupo_id = ?', [grupo_id], (err, categorias) => {
+                if (err) {
+                    console.error('Error al obtener categorías:', err);
+                    return res.status(500).send('Error al obtener categorías.');
+                }
+
+                db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+                    if (err) {
+                        console.error('Error al obtener el grupo:', err);
+                        return res.status(500).send('Error al obtener el grupo.');
+                    }
+
+                    if (grupoResults.length === 0) {
+                        return res.status(404).send('Grupo no encontrado.');
+                    }
+
+                    const grupo = grupoResults[0];
+
+                    res.render('crearCaso', { clientes, encargados, categorias, grupo });
+                });
+            });
+        });
+    });
+};
+
+
+exports.editarCaso = (req, res) => {
+    const { id } = req.params;
+
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query('SELECT * FROM casos WHERE id = ?', [id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el caso:', err);
+            return res.status(500).send('Error al obtener el caso.');
+        }
+
+        if (results.length === 0) {
+            return res.status(404).send('Caso no encontrado.');
+        }
+
+        const caso = results[0];
+
+        db.query('SELECT categoria_id, cantidad FROM caso_categorias WHERE caso_id = ?', [id], (err, casoCategorias) => {
+            if (err) {
+                console.error('Error al obtener las categorías del caso:', err);
+                return res.status(500).send('Error al obtener las categorías del caso.');
+            }
+
+            db.query('SELECT * FROM clientes WHERE grupo_id = ?', [grupo_id], (err, clientes) => {
+                if (err) {
+                    console.error('Error al obtener clientes:', err);
+                    return res.status(500).send('Error al obtener clientes.');
+                }
+
+                db.query('SELECT * FROM encargados WHERE grupo_id = ?', [grupo_id], (err, encargados) => {
+                    if (err) {
+                        console.error('Error al obtener encargados:', err);
+                        return res.status(500).send('Error al obtener encargados.');
+                    }
+
+                    db.query('SELECT * FROM categorias WHERE grupo_id = ?', [grupo_id], (err, categorias) => {
+                        if (err) {
+                            console.error('Error al obtener categorías:', err);
+                            return res.status(500).send('Error al obtener categorías.');
+                        }
+
+                        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+                            if (err) {
+                                console.error('Error al obtener el grupo:', err);
+                                return res.status(500).send('Error al obtener el grupo.');
+                            }
+
+                            if (grupoResults.length === 0) {
+                                return res.status(404).send('Grupo no encontrado.');
+                            }
+
+                            const grupo = grupoResults[0];
+
+                            res.render('editarCaso', { caso, casoCategorias, clientes, encargados, categorias, grupo });
+                        });
+                    });
+                });
+            });
+        });
+    });
+};
+
+
+exports.editarCasoPost = (req, res) => {
+    const { id } = req.params;
+    const { cliente_id, abogado_id, categoria_id, categoria_cantidad, descripcion, estado, precio, fecha_entrega, fecha_devolucion } = req.body;
+
+    const categoriasArray = Array.isArray(categoria_id) ? categoria_id : [categoria_id];
+    const cantidadesArray = Array.isArray(categoria_cantidad) ? categoria_cantidad : [categoria_cantidad];
+
+    db.query('UPDATE casos SET cliente_id = ?, abogado_id = ?, descripcion = ?, estado = ?, precio = ?, fecha_entrega = ?, fecha_devolucion = ? WHERE id = ?',
+        [cliente_id, abogado_id, descripcion, estado, precio, fecha_entrega, fecha_devolucion, id], (err) => {
+            if (err) throw err;
+
+            db.query('DELETE FROM caso_categorias WHERE caso_id = ?', [id], (err) => {
+                if (err) throw err;
+
+                const categoriaQueries = categoriasArray.map((categoriaId, index) => {
+                    const cantidad = parseFloat(cantidadesArray[index]);
+                    return new Promise((resolve, reject) => {
+                        db.query('INSERT INTO caso_categorias (caso_id, categoria_id, cantidad) VALUES (?, ?, ?)', [id, categoriaId, cantidad], (err) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve();
+                            }
+                        });
+                    });
+                });
+
+                Promise.all(categoriaQueries)
+                    .then(() => {
+                        res.redirect('/casos');
+                    })
+                    .catch(err => {
+                        throw err;
+                    });
+            });
+        });
+};
+
+
+
+exports.eliminarCaso = (req, res) => {
+    const { id } = req.params;
+
+    db.query('DELETE FROM caso_categorias WHERE caso_id = ?', [id], (err) => {
+        if (err) throw err;
+
+        db.query('DELETE FROM casos WHERE id = ?', [id], (err) => {
+            if (err) throw err;
+            res.redirect('/casos');
+        });
+    });
+};
+
+exports.generarPDF = (req, res) => {
+    const { id } = req.params;
+
+    // Primero obtenemos los detalles del caso
+    db.query(`
+        SELECT 
+            casos.id, 
+            clientes.nombre AS cliente_nombre,
+            clientes.apellido AS cliente_apellido, 
+            clientes.telefono AS cliente_telefono,
+            encargados.nombre AS encargado_nombre, 
+            encargados.apellido AS encargado_apellido,
+            GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
+            GROUP_CONCAT(caso_categorias.cantidad SEPARATOR ', ') AS categorias_cantidades,
+            GROUP_CONCAT(categorias.precio SEPARATOR ', ') AS categorias_precios, 
+            casos.descripcion, 
+            casos.estado, 
+            casos.precio,
+            casos.fecha_creacion,
+            casos.fecha_entrega, 
+            casos.fecha_devolucion,
+            casos.grupo_id
+        FROM casos 
+        JOIN clientes ON casos.cliente_id = clientes.id 
+        JOIN encargados ON casos.abogado_id = encargados.id 
+        JOIN caso_categorias ON casos.id = caso_categorias.caso_id 
+        JOIN categorias ON caso_categorias.categoria_id = categorias.id 
+        WHERE casos.id = ? 
+        GROUP BY casos.id, clientes.nombre, clientes.apellido, clientes.telefono, encargados.nombre, encargados.apellido, casos.descripcion, casos.estado, casos.precio, casos.fecha_creacion, casos.fecha_entrega, casos.fecha_devolucion`,
+        [id], (err, results) => {
+            if (err) {
+                console.error('Error al obtener el caso:', err);
+                return res.status(500).send('Error al obtener los detalles del caso.');
+            }
+
+            const caso = results[0];
+            const casoUrl = `${req.protocol}://${req.get('host')}/casos/ver/${caso.id}`;
+            
+            // Ahora obtenemos los datos de la empresa (grupo)
+            db.query(`
+                SELECT 
+                    nombre_empresa, 
+                    telefono, 
+                    email, 
+                    foto_perfil, 
+                    ubicacion,
+                    terminos
+                FROM grupos
+                WHERE id = ?`,
+                [caso.grupo_id], (err, resultsGrupo) => {
+                    if (err) {
+                        console.error('Error al obtener los detalles del grupo:', err);
+                        return res.status(500).send('Error al obtener los detalles del grupo.');
+                    }
+
+                    const grupo = resultsGrupo[0];
+
+                    // Generamos el código QR
+                    QRCode.toDataURL(casoUrl, (err, qrCodeUrl) => {
+                        if (err) {
+                            console.error('Error al generar el código QR:', err);
+                            return res.status(500).send('Error al generar el código QR.');
+                        }
+
+                        // Pasamos todos los datos a la vista
+                        res.render('pdfCaso', { 
+                            caso, 
+                            grupo, 
+                            qrCodeUrl, 
+                            layout: false 
+                        }, (err, html) => {
+                            if (err) {
+                                console.error('Error al renderizar la vista:', err);
+                                return res.status(500).send('Error al renderizar la vista.');
+                            }
+
+                            const options = {
+                                format: 'A4',
+                                orientation: 'portrait',
+                                border: {
+                                    top: "10mm",
+                                    right: "10mm",
+                                    bottom: "10mm",
+                                    left: "10mm"
+                                }
+                            };
+
+                            // Creamos el PDF
+                            pdf.create(html, options).toBuffer((err, buffer) => {
+                                if (err) {
+                                    console.error('Error al crear el PDF:', err);
+                                    return res.status(500).send('Error al crear el PDF.');
+                                }
+                                
+                                res.set({
+                                    'Content-Type': 'application/pdf',
+                                    'Content-Disposition': `attachment; filename=caso_${id}.pdf`,
+                                });
+                                res.send(buffer);
+                            });
+                        });
+                    });
+                });
+        });
+};
+
+
+// CATEGORIAS 
+exports.categorias = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id; 
+    const rol = req.session.encargado.especialidad;
+
+    const queryCategorias = `
+        SELECT categorias.*, grupos.nombre_empresa AS grupo_nombre 
+        FROM categorias 
+        LEFT JOIN grupos ON categorias.grupo_id = grupos.id
+        WHERE categorias.grupo_id = ?
+    `;
+
+    db.query(queryCategorias, [grupo_id], (err, categorias) => {
+        if (err) {
+            console.error('Error al obtener las categorías:', err);
+            return res.status(500).send('Error al obtener las categorías.');
+        }
+
+        const queryGrupo = 'SELECT * FROM grupos WHERE id = ?';
+        db.query(queryGrupo, [grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0]; 
+
+            res.render('categorias', { categorias, grupo, rol: rol });
+        });
+    });
+};
+
+
+
+exports.crearCategoria = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el grupo:', err);
+            return res.status(500).send('Error al obtener el grupo.');
+        }
+
+        if (results.length === 0) {
+            return res.status(404).send('Grupo no encontrado.');
+        }
+
+        const grupo = results[0]; 
+
+        res.render('crearCategoria', { grupo });
+    });
+};
+
+
+exports.crearCategoriaPost = (req, res) => {
+    const { nombre, precio, descripcion, stock } = req.body;
+
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.redirect('/crearCliente');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query('INSERT INTO categorias (nombre, precio, descripcion, stock, grupo_id) VALUES (?, ?, ?, ?, ?)',
+        [nombre, precio, descripcion, stock, grupo_id], (err) => {
+            if (err) {
+                console.error('Error al insertar categoría:', err);
+                return res.status(500).send('Error al insertar la categoría.');
+            }
+            res.redirect('/categorias');
+        });
+};
+
+exports.editarCategoria = (req, res) => {
+    const { id } = req.params;
+    
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+
+    db.query('SELECT * FROM categorias WHERE id = ?', [id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener la categoría:', err);
+            return res.status(500).send('Error al obtener la categoría.');
+        }
+
+        if (results.length === 0) {
+            return res.status(404).send('Categoría no encontrada.');
+        }
+
+        const categoria = results[0];
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0]; 
+
+            res.render('editarCategoria', { categoria, grupo });
+        });
+    });
+};
+
+
+exports.editarCategoriaPost = (req, res) => {
+    const { id } = req.params;
+    const { nombre, precio, descripcion, stock } = req.body;
+    db.query('UPDATE categorias SET nombre = ?, precio = ?, descripcion = ?, stock = ? WHERE id = ?',
+        [nombre, precio, descripcion, stock, id], (err) => {
+            if (err) throw err;
+            res.redirect('/categorias');
+        });
+};
+
+exports.eliminarCategoria = (req, res) => {
+    const { id } = req.params;
+
+    db.query('DELETE FROM casos WHERE categoria_id = ?', [id], (err) => {
+        if (err) {
+            console.error('Error al eliminar relaciones en casos:', err);
+            return res.status(500).send('Error al eliminar las relaciones en casos');
+        }
+
+        db.query('DELETE FROM caso_categorias WHERE categoria_id = ?', [id], (err) => {
+            if (err) {
+                console.error('Error al eliminar relaciones en caso_categorias:', err);
+                return res.status(500).send('Error al eliminar las relaciones en caso_categorias');
+            }
+
+            db.query('DELETE FROM categorias WHERE id = ?', [id], (err) => {
+                if (err) {
+                    console.error('Error al eliminar la categoría:', err);
+                    return res.status(500).send('Error al eliminar la categoría');
+                }
+
+                res.redirect('/categorias');
+            });
+        });
+    });
+};
+
+
+
+//NOTAS
+exports.crearNota = (req, res) => {
+    const { titulo, contenido } = req.body;
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.redirect('/crearCliente');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    db.query('INSERT INTO notas (titulo, contenido, grupo_id) VALUES (?, ?, ?)', [titulo, contenido, grupo_id], (err) => {
+        if (err) throw err;
+        res.redirect('/notas');
+    });
+};
+
+exports.leerNotas = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id; 
+    const rol = req.session.encargado.especialidad;
+
+    const query = `
+        SELECT notas.*, grupos.nombre_empresa AS grupo_nombre 
+        FROM notas 
+        LEFT JOIN grupos ON notas.grupo_id = grupos.id
+        WHERE notas.grupo_id = ?
+    `;
+
+    db.query(query, [grupo_id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener las notas:', err);
+            return res.status(500).send('Error al obtener las notas.');
+        }
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0]; 
+
+            res.render('notas', { notas: results, grupo, rol:rol });
+        });
+    });
+};
+
+
+// Obtener la nota para editar
+exports.obtenerNotaParaEditar = (req, res) => {
+    const { id } = req.params;
+    db.query('SELECT * FROM notas WHERE id = ?', [id], (err, results) => {
+        if (err) throw err;
+        const nota = results[0];
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [nota.grupo_id], (err, grupoResults) => {
+            if (err) throw err;
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0];
+
+            res.render('editarNota', { nota, grupo });
+        });
+    });
+};
+
+// Actualizar una nota
+exports.editarNota = (req, res) => {
+    const { id } = req.params;
+    const { titulo, contenido } = req.body;
+
+    db.query('UPDATE notas SET titulo = ?, contenido = ? WHERE id = ?', [titulo, contenido, id], (err) => {
+        if (err) throw err;
+        res.redirect('/notas');
+    });
+};
+
+exports.eliminarNota = (req, res) => {
+    const { id } = req.params;
+    db.query('DELETE FROM notas WHERE id = ?', [id], (err) => {
+        if (err) throw err;
+        res.redirect('/notas');
+    });
+};
+
+//RECORDATORIOS
+exports.crearRecordatorio = (req, res) => {
+    const { titulo, contenido, fecha_inicio, fecha_fin } = req.body;
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.redirect('/crearCliente');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    db.query('INSERT INTO recordatorios (titulo, contenido, fecha_inicio, fecha_fin, grupo_id) VALUES (?, ?, ?, ?, ?)', 
+        [titulo, contenido, fecha_inicio, fecha_fin, grupo_id], (err) => {
+            if (err) throw err;
+            res.redirect('/recordatorios');
+        });
+};
+
+exports.leerRecordatorios = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    const rol = req.session.encargado.especialidad;
+
+    const queryRecordatorios = `
+        SELECT recordatorios.*, grupos.nombre_empresa AS grupo_nombre 
+        FROM recordatorios 
+        LEFT JOIN grupos ON recordatorios.grupo_id = grupos.id
+        WHERE recordatorios.grupo_id = ?
+    `;
+
+    db.query(queryRecordatorios, [grupo_id], (err, recordatorioResults) => {
+        if (err) {
+            console.error('Error al obtener los recordatorios:', err);
+            return res.status(500).send('Error al obtener los recordatorios.');
+        }
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0];
+
+            const recordatorios = recordatorioResults.map(recordatorio => ({
+                ...recordatorio,
+                fecha_inicio: recordatorio.fecha_inicio ? recordatorio.fecha_inicio.toISOString().split('T')[0] : null,
+                fecha_fin: recordatorio.fecha_fin ? recordatorio.fecha_fin.toISOString().split('T')[0] : null
+            }));
+
+            res.render('recordatorios', { recordatorios, grupo, rol:rol });
+        });
+    });
+};
+
+
+exports.editarRecordatorio = (req, res) => {
+    const { id } = req.params;
+    const { titulo, contenido, fecha_inicio, fecha_fin, completado } = req.body;
+
+    db.query('UPDATE recordatorios SET titulo = ?, contenido = ?, fecha_inicio = ?, fecha_fin = ?, completado = ? WHERE id = ?', 
+        [titulo, contenido, fecha_inicio, fecha_fin, completado === 'on', id], (err) => {
+            if (err) throw err;
+            res.redirect('/recordatorios');
+        });
+};
+
+exports.obtenerRecordatorioParaEditar = (req, res) => {
+    const { id } = req.params;
+    db.query('SELECT * FROM recordatorios WHERE id = ?', [id], (err, recordatorioResults) => {
+        if (err) throw err;
+
+        if (recordatorioResults.length === 0) {
+            return res.status(404).send('Recordatorio no encontrado.');
+        }
+
+        const recordatorio = recordatorioResults[0];
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [recordatorio.grupo_id], (err, grupoResults) => {
+            if (err) throw err;
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0]; 
+
+            res.render('editarRecordatorio', { recordatorio, grupo });
+        });
+    });
+};
+
+exports.eliminarRecordatorio = (req, res) => {
+    const { id } = req.params;
+    db.query('DELETE FROM recordatorios WHERE id = ?', [id], (err) => {
+        if (err) throw err;
+        res.redirect('/recordatorios');
+    });
+};
+
+exports.enviar = (req, res) => {
+    const { nombre, correo, mensaje } = req.body;
+    if (!nombre || !correo || !mensaje) {
+        return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    }
+    const query = "INSERT INTO mensajes (nombre, correo, mensaje) VALUES (?, ?, ?)";
+    db.query(query, [nombre, correo, mensaje], (err, result) => {
+      if (err) {
+        console.error("Error insertando datos:", err);
+        res.status(500).json({ error: "Error al guardar el mensaje" });
+      } else {
+        res.json({ mensaje: "Mensaje enviado correctamente" });
+      }
+    });
+};
+
+
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+
+// Mostrar formulario de recuperación
+exports.showForgotPassword = (req, res) => {
+    res.render('forgot-password', { layout: false });
+};
+
+// Procesar solicitud de recuperación
+exports.forgotPassword = (req, res) => {
+    const { email } = req.body;
+    
+    db.query('SELECT * FROM encargados WHERE email = ?', [email], (err, results) => {
+        if (err || results.length === 0) {
+            return res.render('sesiones', { layout: false, mensaje: 'Correo no registrado.', tipo: 'error' });
+            // return res.send('Correo no registrado.');
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace('T', ' ');
+
+        db.query('UPDATE encargados SET reset_token = ?, reset_expires = ? WHERE email = ?', 
+            [token, expires, email], (err) => {
+                if (err) return res.render('sesiones', { layout: false, mensaje: 'Error al enviar el token.', tipo: 'error' });
+                const resetLink = `https://davanitechnology.com/reset-password/${token}`;
+                sendResetEmail(email, resetLink);
+                return res.render('sesiones', { layout: false, mensaje: 'Revisa tu correo para recuperar tu contraseña.', tipo: 'success' });
+                // res.send('Revisa tu correo para recuperar tu contraseña.');
+        });
+
+    });
+};
+
+// Mostrar formulario para nueva contraseña
+exports.showResetPassword = (req, res) => {
+    const { token } = req.params;
+
+    db.query('SELECT * FROM encargados WHERE reset_token = ? AND reset_expires > NOW()', [token], 
+(err, results) => {
+        if (err) {
+            console.error('Error en la consulta:', err);
+            return res.render('sesiones', { layout: false, mensaje: 'Error al verificar el token.', tipo: 'error' });
+            // return res.send('Error al verificar el token.');
+        }
+        if (results.length === 0) {
+            console.log('Token inválido o expirado:', token);
+            return res.render('sesiones', { layout: false, mensaje: 'Token inválido o expirado.', tipo: 'error' });
+            // return res.send('Token inválido o expirado.');
+        }
+    
+        res.render('reset-password', { layout: false, token });
+    });
+    
+};
+
+// Procesar nueva contraseña
+exports.resetPassword = async (req, res) => {
+    const { token, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    db.query('SELECT * FROM encargados WHERE reset_token = ? AND reset_expires > NOW()', [token], 
+(err, results) => {
+        if (err || results.length === 0) {
+            return res.render('sesiones', { layout: false, mensaje: 'Token invalido o expirado.', tipo: 'error' });
+            // return res.send('Token inválido o expirado.');
+        }
+
+        const email = results[0].email;
+
+        db.query('UPDATE encargados SET password = ?, reset_token = NULL, reset_expires = NULL WHERE email = ?', 
+            [hashedPassword, email], (err) => {
+                if (err) return res.send('Error al actualizar la contraseña.');
+                return res.render('sesiones', { layout: false, mensaje: 'Revisa tu correo para recuperar tu contraseña.', tipo: 'success' });
+                // res.send('Contraseña restablecida con éxito.');
+            }
+        );
+    });
+};
+
+function sendResetEmail(to, link) {
+    const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: { 
+            user: "technologydavani@gmail.com", 
+            pass: "armpotcnkfzgmccv" 
+        },
+        tls: { rejectUnauthorized: false }
+    });
+
+    const mailOptions = {
+        from: '"Davani Technology" <technologydavani@gmail.com>',
+        to,
+        subject: "🔒 Recuperación de contraseña",
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 
+20px; text-align: center; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 
+0, 0, 0.2);">
+                <h2 style="color: #4CAF50;">🔑 Recuperación de contraseña</h2>
+                <p style="color: #555;">Hemos recibido una solicitud para restablecer tu contraseña. 
+Si no hiciste esta solicitud, ignora este mensaje.</p>
+                <a href="${link}" style="display: inline-block; padding: 12px 20px; margin-top: 10px; 
+font-size: 16px; color: white; background-color: #4CAF50; text-decoration: none; border-radius: 5px;">
+                    🔗 Restablecer Contraseña
+                </a>
+                <p style="margin-top: 20px; font-size: 14px; color: #777;">Este enlace expirará en 1 
+hora.</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="font-size: 12px; color: #999;">Si tienes problemas, copia y pega el 
+siguiente enlace en tu navegador:</p>
+                <p style="word-wrap: break-word; font-size: 12px; color: #666;">${link}</p>
+            </div>
+        `
+    };
+
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+            console.error("❌ Error al enviar el correo:", err);
+        } else {
+            console.log("✅ Correo enviado: " + info.response);
+        }
+    });
+}

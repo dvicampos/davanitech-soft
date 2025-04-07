@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles de mi pedido</title>
+    <link rel="stylesheet" 
+href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/img/logo.png" type="image/x-icon">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 1%;
+            padding: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #343a40;
+        }
+        .case-details p {
+            margin: 5px 0;
+        }
+        .table-container {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .contact-info {
+            padding: 15px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Detalles de mi pedido <%= grupo.nombre_empresa %></h1>
+        
+        <div class="case-details">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Nombre del cliente:</strong> <%= caso.cliente_nombre %> <%= 
+caso.cliente_apellido %></p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Nombre del rentador:</strong> <%= caso.abogado_nombre %> <%= 
+caso.abogado_apellido %></p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Fecha de Entrega:</strong> <%= new 
+Date(caso.fecha_entrega).toLocaleString() %></p>
+                    <p><strong>Fecha de Devolución:</strong> <%= new 
+Date(caso.fecha_devolucion).toLocaleString() %></p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Situación del pedido:</strong> <%= caso.estado %></p>
+                    <p><strong>Total de venta:</strong> $<%= caso.precio %></p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 text-center bg-light p-3 rounded">
+                    <p><strong>Ubicación de entrega:</strong> <%= caso.descripcion %></p>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="text-center">Detalles del alquiler</h2>
+        <table class="table table-bordered text-center">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Categoría</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% caso.categorias_nombres.split(', ').forEach((categoria, index) => { %>
+                    <tr>
+                        <td><%= categoria %></td>
+                        <td><%= caso.categorias_cantidades.split(', ')[index] %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        
+        <h2 class="text-center">Contacto directo</h2>
+        <div class="row contact-info bg-success text-white text-center">
+            <div class="col-md-6">
+                <p><strong>Número telefónico:</strong> 
+                    <a class="text-light font-italic" href="tel:<%= grupo.telefono %>"><%= grupo.telefono %></a>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Email:</strong> 
+                    <a class="text-light font-italic" 
+href="mailto:<%= grupo.email %>"><%= grupo.email %></a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+

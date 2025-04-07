@@ -1,0 +1,46 @@
+<style>
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+</style>
+<h1 class="text-center">Clientes <p class="fa fa-user"></p></h1>
+<% if (rol !== 'usuario') { %>
+<a href="/clientes/crear" class="btn btn-primary mb-3"><i class="fa-solid fa-plus"></i> Agregar cliente nuevo</a>
+<% } %>
+<div class="table-wrapper">
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Grupo ID</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% clientes.forEach(cliente => { %>
+            <tr>
+                <td><%= cliente.id %></td>
+                <td><%= cliente.nombre %></td>
+                <td><%= cliente.apellido %></td>
+                <td><%= cliente.email %></td>
+                <td><%= cliente.telefono %></td>
+                <td><%= cliente.grupo_nombre || 'Sin grupo' %></td>
+                <td>
+                    <% if (rol === 'admin' || rol === 'editor') { %>
+                        <a href="/clientes/editar/<%= cliente.id %>" class="btn btn-warning btn-sm m-2">✏️</a>
+                        <a href="/clientes/eliminar/<%= cliente.id %>" class="btn btn-danger btn-sm m-2">🗑️</a>
+                    <% } else { %>
+                            <p>Sin permisos</p>
+                    <% } %>
+                </td>
+            </tr>
+        <% }); %>
+    </tbody>
+</table>
+</div>
+<a href="/dashboard" class="btn btn-outline-dark mt-3">🔙 Regresar</a>

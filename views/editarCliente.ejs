@@ -1,0 +1,21 @@
+<h1 class="text-center">Editar cliente</h1>
+<form action="/clientes/editar/<%= cliente.id %>" method="POST">
+    <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input type="text" name="nombre" class="form-control" value="<%= cliente.nombre %>" required>
+    </div>
+    <div class="form-group">
+        <label for="apellido">Apellido</label>
+        <input type="text" name="apellido" class="form-control" value="<%= cliente.apellido %>" required>
+    </div>
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" name="email" class="form-control" value="<%= cliente.email %>" required>
+    </div>
+    <div class="form-group">
+        <label for="telefono">Teléfono</label>
+        <input type="text" name="telefono" class="form-control" value="<%= cliente.telefono %>" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar</button>
+</form>
+<a href="/clientes" class="btn btn-danger mt-3">Regresar</a>

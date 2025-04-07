@@ -1,0 +1,28 @@
+
+        <h1 class="text-center">Editar recordatorio</h1>
+        
+        <form action="/editar-recordatorio/<%= recordatorio.id %>" method="POST" class="mt-4">
+            <div class="form-group">
+                <label for="titulo">Título:</label>
+                <input type="text" class="form-control" name="titulo" value="<%= recordatorio.titulo %>" required>
+            </div>
+            <div class="form-group">
+                <label for="contenido">Contenido:</label>
+                <textarea class="form-control" name="contenido" rows="3" required><%= recordatorio.contenido %></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fecha_inicio">Fecha de Inicio:</label>
+                <input type="date" class="form-control" name="fecha_inicio" value="<%= recordatorio.fecha_inicio.toISOString().split('T')[0] %>" required>
+            </div>
+            <div class="form-group">
+                <label for="fecha_fin">Fecha de Fin:</label>
+                <input type="date" class="form-control" name="fecha_fin" value="<%= recordatorio.fecha_fin.toISOString().split('T')[0] %>" required>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="completado" <%= recordatorio.completado ? 'checked' : '' %> />
+                <label class="form-check-label" for="completado">Completado</label>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Actualizar</button>
+        </form>
+
+        <a href="/recordatorios" class="btn btn-danger mt-3 mb-3">Volver</a>

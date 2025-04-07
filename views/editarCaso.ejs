@@ -1,0 +1,86 @@
+<h1 class="text-center">Editar renta</h1>
+<form action="/casos/editar/<%= caso.id %>" method="POST">
+    <div class="form-group">
+        <label for="cliente_id">Cliente</label>
+        <select name="cliente_id" class="form-control" required>
+            <option value="">Seleccionar Cliente</option>
+            <% clientes.forEach(cliente => { %>
+                <option value="<%= cliente.id %>" <%= caso.cliente_id === cliente.id ? 'selected' : '' %>>
+                    <%= cliente.nombre %> <%= cliente.apellido %>
+                </option>
+            <% }); %>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="abogado_id">Encargado</label>
+        <select name="abogado_id" class="form-control" required>
+            <option value="">Seleccionar encargado</option>
+            <% encargados.forEach(encargado => { %>
+                <option value="<%= encargado.id %>" <%= caso.abogado_id === encargado.id ? 'selected' 
+: '' %>>
+                    <%= encargado.nombre %> <%= encargado.apellido %>
+                </option>
+            <% }); %>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="categorias">Categorías</label>
+        <% categorias.forEach(categoria => { %>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" name="categoria_id[]" value="<%= categoria.id %>" data-precio="<%= categoria.precio %>" 
+                           <%= casoCategorias.find(c => c.categoria_id === categoria.id) ? 'checked' : '' %>>
+                    <%= categoria.nombre %> - $<%= categoria.precio %>
+                </label>
+                <input type="number" name="categoria_cantidad[]" class="form-control" min="1" value="<%= casoCategorias.find(c => c.categoria_id === categoria.id)?.cantidad || 1 %>">
+            </div>
+        <% }); %>
+    </div>
+    <div class="form-group">
+        <label for="descripcion">Ubicacion</label>
+        <textarea name="descripcion" class="form-control" placeholder="Descripción" required><%= caso.descripcion %></textarea>
+    </div>
+    <div class="form-group">
+        <label for="estado">Estado</label>
+        <select name="estado" class="form-control" required>
+            <option value="Abierto" <%= caso.estado === 'Abierto' ? 'selected' : '' %>>Abierto</option>
+            <option value="Cerrado" <%= caso.estado === 'Cerrado' ? 'selected' : '' %>>Cerrado</option>
+            <option value="Pendiente" <%= caso.estado === 'Pendiente' ? 'selected' : '' %>>Pendiente</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="fecha_entrega">Fecha de Entrega</label>
+        <input type="datetime-local" name="fecha_entrega" class="form-control" required value="<%= new Date(caso.fecha_entrega).toISOString().substring(0, 16) %>">
+    </div>
+    <div class="form-group">
+        <label for="fecha_devolucion">Fecha de Devolución</label>
+        <input type="datetime-local" name="fecha_devolucion" class="form-control" required value="<%= new Date(caso.fecha_devolucion).toISOString().substring(0, 16) %>">
+    </div>
+    <div class="form-group">
+        <label for="precio">Precio Total de renta</label>
+        <input type="number" name="precio" class="form-control" step="0.01" value="<%= caso.precio %>" readonly>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Actualizar</button>
+</form>
+<a href="/casos" class="btn btn-danger mt-3 mb-3">Regresar</a>
+<script>
+    document.querySelectorAll('input[type="checkbox"], input[type="number"]').forEach(element => {
+        element.addEventListener('change', calcularPrecioTotal);
+    });
+
+    function calcularPrecioTotal() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        let totalPrecio = 0;
+
+        checkboxes.forEach((checkbox, index) => {
+            if (checkbox.checked) {
+                const precio = parseFloat(checkbox.getAttribute('data-precio'));
+                const cantidad = document.querySelectorAll('input[name="categoria_cantidad[]"]')[index].value;
+                totalPrecio += precio * cantidad;
+            }
+        });
+
+        document.querySelector('input[name="precio"]').value = totalPrecio.toFixed(2);
+    }
+</script>

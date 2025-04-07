@@ -1,0 +1,35 @@
+<h1 class="text-center">Editar encargado</h1>
+
+<form action="/encargados/editar/<%= encargado.id %>" method="POST">
+    <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input type="text" name="nombre" class="form-control" value="<%= encargado.nombre %>" required>
+    </div>
+    <div class="form-group">
+        <label for="apellido">Apellido</label>
+        <input type="text" name="apellido" class="form-control" value="<%= encargado.apellido %>" required>
+    </div>
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" name="email" class="form-control" value="<%= encargado.email %>" required>
+    </div>
+    <div class="form-group">
+        <label for="telefono">Teléfono</label>
+        <input type="text" name="telefono" class="form-control" value="<%= encargado.telefono %>" required>
+    </div>
+    <div class="form-group">
+        <label for="especialidad">Rol</label>
+        <select class="form-control" name="especialidad" required>
+            <option value="admin" <%= encargado.especialidad === "admin" ? "selected" : "" %>>Administrador</option>
+            <option value="editor" <%= encargado.especialidad === "editor" ? "selected" : "" %>>Editor</option>
+            <option value="moderador" <%= encargado.especialidad === "moderador" ? "selected" : "" %>>Moderador</option>
+            <option value="usuario" <%= encargado.especialidad === "usuario" ? "selected" : "" %>>Usuario</option>
+        </select>
+    </div>    
+    <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input class="form-control" type="password" name="password" placeholder="Contraseña">
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar</button>
+</form>
+<a href="/encargados" class="btn btn-danger mt-3">Regresar</a>

@@ -1,0 +1,58 @@
+<style>
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+</style>
+<h1 class="text-center">Encargados <i class="fa fa-users-gear"></i></h1>
+<% if (rol !== 'usuario') { %>
+    <a href="/encargados/crear" class="btn btn-primary mb-3"><i class="fa-solid fa-plus"></i> Agregar encargado</a>
+<% } %>
+<div class="table-wrapper">
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Rol</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Grupo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% encargados.forEach(encargado=> { %>
+            <tr>
+                <td>
+                    <%= encargado.id %>
+                </td>
+                <td>
+                    <%= encargado.nombre %> <%= encargado.apellido %>
+                </td>
+                <td>
+                    <%= encargado.especialidad %>
+                </td>
+                <td>
+                    <%= encargado.email %>
+                </td>
+                <td>
+                    <%= encargado.telefono %>
+                </td>
+                <td>
+                    <%= encargado.grupo_nombre ? encargado.grupo_nombre : 'Sin grupo' %>
+                </td>
+                <td>
+                    <% if (rol === 'admin' || rol === 'editor') { %>
+                        <a href="/encargados/editar/<%= encargado.id %>" class="btn btn-warning btn-sm m-2">✏️</a>
+                        <a href="/encargados/eliminar/<%= encargado.id %>" class="btn btn-danger btn-sm m-2">🗑️</a>
+                    <% } else { %>
+                            <p>Sin permisos</p>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+    </tbody>
+</table>
+</div>
+<a href="/dashboard" class="btn btn-outline-dark mt-3">🔙 Regresar</a>

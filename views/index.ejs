@@ -1,0 +1,113 @@
+<section class="content">
+    <div class="container-fluid text-center">
+        <div class="card-body text-center p-4">
+            <h1 class="font-weight-bold text-info">
+                Bienvenido, <%= usuario.nombre %> <%= usuario.apellido %>
+            </h1>
+            <p class="lead text-secondary mt-3">
+                <i class="fas fa-building"></i> Grupo: 
+                <span class="font-weight-bold text-dark"><%= usuario.nombre_empresa || 'Sin grupo' %></span>
+            </p>
+        </div>
+        <h3 class="text-center text-primary font-weight-bold">🚀 Accesos Rápidos</h3>  
+        <div class="row mt-4 justify-content-center">
+            <div class="col-lg-3 col-md-6 col-12">
+                <div class="small-box bg-success shadow-lg rounded-lg text-center">
+                    <div class="inner">
+                        <h3 class="font-weight-bold">Servicios</h3>
+                        <p>Gestiona tus servicios fácilmente.</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-home fa-3x"></i>
+                    </div>
+                    <a href="/casos" class="small-box-footer text-light font-weight-bold">
+                        Ir <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+            <% if (rol === 'admin' || rol === 'editor') { %>
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="small-box bg-danger shadow-lg rounded-lg text-center">
+                        <div class="inner">
+                            <h3 class="font-weight-bold">Mis datos</h3>
+                            <p>Administrar mis datos de mi empresa.</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa fa-building fa-3x"></i>
+                        </div>
+                        <a href="/edit-group" class="small-box-footer text-light font-weight-bold">
+                            Ir <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+            <% } else { %>
+                    <hr>
+            <% } %> 
+            <% if (rol === 'admin') { %>
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="small-box bg-warning shadow-lg rounded-lg text-center">
+                        <div class="inner">
+                            <h3 class="font-weight-bold text-white">Admin</h3>
+                            <p>Agrega y administra tu personal.</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa fa-users-gear fa-3x"></i>
+                        </div>
+                        <a href="/encargados" class="small-box-footer text-dark font-weight-bold">
+                            Ir <i class="fas fa-arrow-circle-right"></i>
+                        </a>
+                    </div>
+                </div>
+            <% } else { %>
+                    <hr>
+            <% } %>
+        </div>
+        <h3 class="text-center fw-bold text-uppercase text-primary">📌 Recordatorios</h3>
+
+        <div class="container">
+            <div class="row mt-4">
+                <% recordatorios.forEach(recordatorio => { %>
+                    <% if (!recordatorio.completado) { %>
+                        <% 
+                        const fechaFin = new Date(recordatorio.fecha_fin);
+                        const hoy = new Date();
+                        const diferencia = Math.ceil((fechaFin - hoy) / (1000 * 60 * 60 * 24)); 
+
+                        let cardClass, textColor;
+                        if (diferencia < 1) {
+                            cardClass = 'bg-secondary';
+                            textColor = 'text-white';
+                        } else if (diferencia === 1) {
+                            cardClass = 'bg-danger';
+                            textColor = 'text-white';
+                        } else if (diferencia === 2) {
+                            cardClass = 'bg-warning';
+                            textColor = 'text-dark';
+                        } else {
+                            cardClass = 'bg-success';
+                            textColor = 'text-white';
+                        }
+                        %>
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card shadow-lg border-0 <%= cardClass %> <%= textColor %>">
+                                <div class="card-header fw-bold fs-5">
+                                    <%= recordatorio.titulo %>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text fs-6"><%= recordatorio.contenido %></p>
+                                    <% if (rol === 'admin' || rol === 'editor') { %>
+                                    <a href="/editar-recordatorio/<%= recordatorio.id %>" class="btn btn-light fw-bold">✔ Marcar como completada</a>
+                                    <% } else { %>
+                                        <p class="text-danger">Sin permisos</p>
+                                    <% } %>
+                                </div>
+                                <div class="card-footer fw-bold">
+                                    <%= diferencia >= 0 ? `⏳ ${diferencia} días restantes` : "🚨 ¡Fecha cumplida!" %>
+                                </div>
+                            </div>
+                        </div>
+                    <% } %>
+                <% }) %>
+            </div>
+        </div>
+</section>
