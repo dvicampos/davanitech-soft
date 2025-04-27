@@ -1,3 +1,33 @@
+<style>
+    .card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.card {
+    padding: 15px;
+    margin: 10px;
+    background-color: #f9f9f9;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: scale(1.05);
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.card-text {
+    font-size: 1rem;
+    color: #555;
+}
+</style>
 <h1 class="text-center">Crear renta</h1>
 <form action="/casos/crear" method="POST">
     <div class="form-group">
@@ -23,16 +53,22 @@
         </select>
     </div>
     <div class="form-group">
-        <label for="categorias">Categorías</label>
-        <% categorias.forEach(categoria => { %>
-            <div class="checkbox">
-                <label>
-                    <input type="checkbox" name="categoria_id[]" value="<%= categoria.id %>" data-precio="<%= categoria.precio %>">
-                    <%= categoria.nombre %> - $<%= categoria.precio %>
-                </label>
-                <input type="number" name="categoria_cantidad[]" class="form-control" min="1" value="1">
-            </div>
-        <% }); %>
+        <h4 class="text-center" for="categorias">Productos</h4>
+        <div class="card-container d-flex flex-wrap">
+            <% categorias.forEach(categoria => { %>
+                <div class="card m-2" style="width: 18rem; border: 1px solid #ddd; border-radius: 8px; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= categoria.nombre %></h5>
+                        <p class="card-text">Precio: $<%= categoria.precio %></p>
+                        <p class="card-text">Stock disponible: <%= categoria.stock %></p>
+                        <label for="categoria_<%= categoria.id %>">
+                            <input type="checkbox" id="categoria_<%= categoria.id %>" name="categoria_id[]" value="<%= categoria.id %>" data-precio="<%= categoria.precio %>"> Seleccionar
+                        </label>
+                        <input type="number" name="categoria_cantidad[]" class="form-control mt-2" min="1" value="1" placeholder="Cantidad">
+                    </div>
+                </div>
+            <% }); %>
+        </div>
     </div>
     <div class="form-group">
         <label for="descripcion">Ubicacion</label>

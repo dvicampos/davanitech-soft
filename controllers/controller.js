@@ -1768,3 +1768,266 @@ siguiente enlace en tu navegador:</p>
         }
     });
 }
+
+exports.obtenerDatosCasos = (req, res) => { 
+    const grupo_id = req.session.encargado?.grupo_id;
+    if (!grupo_id) return res.status(403).send('Acceso denegado');
+
+    const { fechaInicio, fechaFin } = req.query;
+
+    let condiciones = `casos.grupo_id = ?`;
+    const valores = [grupo_id];
+
+    if (fechaInicio) {
+        condiciones += ` AND DATE(casos.fecha_entrega) >= ?`;
+        valores.push(fechaInicio);
+    }
+
+    if (fechaFin) {
+        condiciones += ` AND DATE(casos.fecha_entrega) <= ?`;
+        valores.push(fechaFin);
+    }
+
+    const query = `
+        SELECT 
+            casos.id AS caso_id, 
+            clientes.nombre AS cliente_nombre, 
+            encargados.nombre AS abogado_nombre, 
+            grupos.nombre_empresa AS grupo_nombre, 
+            GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
+            casos.descripcion, 
+            casos.estado,
+            CASE WHEN casos.estado = 'Cerrado' THEN casos.precio ELSE NULL END AS precio,
+            casos.fecha_entrega,
+            casos.fecha_devolucion
+        FROM 
+            casos 
+        JOIN 
+            clientes ON casos.cliente_id = clientes.id 
+        JOIN 
+            encargados ON casos.abogado_id = encargados.id 
+        LEFT JOIN 
+            grupos ON casos.grupo_id = grupos.id 
+        JOIN 
+            caso_categorias ON casos.id = caso_categorias.caso_id 
+        JOIN 
+            categorias ON caso_categorias.categoria_id = categorias.id
+        WHERE 
+            ${condiciones}
+        GROUP BY 
+            casos.id
+    `;
+    
+
+    db.query(query, valores, (err, results) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error al obtener los casos');
+        }
+
+        res.render('graficas', {
+            grupo: { nombre_empresa: results[0]?.grupo_nombre || 'Desconocido' },
+            casos: results
+        });
+    });
+};
+
+const ExcelJS = require('exceljs');
+
+exports.exportarExcel = (req, res) => {
+    const grupo_id = req.session.encargado?.grupo_id;
+    if (!grupo_id) return res.status(403).send('Acceso denegado');
+
+    const { fechaInicio, fechaFin, estado, cliente, categoria } = req.query;
+
+    let condiciones = `casos.grupo_id = ?`;
+    const valores = [grupo_id];
+
+    if (fechaInicio) {
+        condiciones += ` AND DATE(casos.fecha_entrega) >= ?`;
+        valores.push(fechaInicio);
+    }
+
+    if (fechaFin) {
+        condiciones += ` AND DATE(casos.fecha_entrega) <= ?`;
+        valores.push(fechaFin);
+    }
+
+    if (estado) {
+        condiciones += ` AND casos.estado = ?`;
+        valores.push(estado);
+    }
+
+    if (cliente) {
+        condiciones += ` AND clientes.nombre LIKE ?`;
+        valores.push(`%${cliente}%`);
+    }
+
+    if (categoria) {
+        condiciones += ` AND categorias.nombre LIKE ?`;
+        valores.push(`%${categoria}%`);
+    }
+
+    const queryDetalles = `
+        SELECT 
+            casos.id AS caso_id, 
+            clientes.nombre AS cliente_nombre, 
+            encargados.nombre AS abogado_nombre, 
+            grupos.nombre_empresa AS grupo_nombre, 
+            GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
+            casos.descripcion, 
+            casos.estado,
+            casos.precio,
+            casos.fecha_entrega,
+            casos.fecha_devolucion
+        FROM 
+            casos 
+        JOIN 
+            clientes ON casos.cliente_id = clientes.id 
+        JOIN 
+            encargados ON casos.abogado_id = encargados.id 
+        LEFT JOIN 
+            grupos ON casos.grupo_id = grupos.id 
+        JOIN 
+            caso_categorias ON casos.id = caso_categorias.caso_id 
+        JOIN 
+            categorias ON caso_categorias.categoria_id = categorias.id
+        WHERE 
+            ${condiciones}
+        GROUP BY 
+            casos.id
+    `;
+
+    const queryCategoriasResumen = `
+        SELECT 
+            categorias.nombre AS categoria_nombre,
+            COUNT(casos.id) AS cantidad,
+            SUM(CAST(casos.precio AS DECIMAL(10,2))) AS subtotal
+        FROM 
+            casos
+        JOIN 
+            caso_categorias ON casos.id = caso_categorias.caso_id
+        JOIN 
+            categorias ON caso_categorias.categoria_id = categorias.id
+        JOIN 
+            clientes ON casos.cliente_id = clientes.id
+        WHERE 
+            ${condiciones}
+        GROUP BY 
+            categorias.id
+    `;
+
+    db.query(queryDetalles, valores, async (err, detalles) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error al exportar los casos');
+        }
+
+        db.query(queryCategoriasResumen, valores, async (err2, categoriasResumen) => {
+            if (err2) {
+                console.error(err2);
+                return res.status(500).send('Error al exportar el resumen de categorías');
+            }
+
+            const workbook = new ExcelJS.Workbook();
+
+            // =================
+            // Hoja Resumen por Categoría
+            // =================
+            const sheetResumenCategorias = workbook.addWorksheet('Resumen Categorías');
+
+            sheetResumenCategorias.columns = [
+                { header: 'Categoría', key: 'categoria_nombre', width: 30 },
+                { header: 'Cantidad de Ventas', key: 'cantidad', width: 20 },
+                { header: 'Subtotal ($)', key: 'subtotal', width: 20 }
+            ];
+
+            let totalGeneral = 0;
+
+            categoriasResumen.forEach(item => {
+                sheetResumenCategorias.addRow({
+                    categoria_nombre: item.categoria_nombre,
+                    cantidad: item.cantidad,
+                    subtotal: Number(item.subtotal) || 0
+                });
+
+                totalGeneral += Number(item.subtotal) || 0;
+            });
+
+            // Agregar línea vacía
+            sheetResumenCategorias.addRow({});
+
+            // Agregar TOTAL GENERAL
+            sheetResumenCategorias.addRow({
+                categoria_nombre: 'TOTAL GENERAL',
+                cantidad: '',
+                subtotal: totalGeneral
+            });
+
+            // Agregar Fechas de consulta
+            sheetResumenCategorias.addRow({});
+            sheetResumenCategorias.addRow({ categoria_nombre: `Fecha Inicio: ${fechaInicio || 'N/A'}` });
+            sheetResumenCategorias.addRow({ categoria_nombre: `Fecha Fin: ${fechaFin || 'N/A'}` });
+
+            // Poner en negritas TOTAL y Fechas
+            sheetResumenCategorias.eachRow((row, rowNumber) => {
+                if (rowNumber > categoriasResumen.length + 1) {
+                    row.eachCell(cell => {
+                        cell.font = { bold: true };
+                    });
+                }
+            });
+
+            // =================
+            // Hoja Casos Detallados
+            // =================
+            const sheetCasos = workbook.addWorksheet('Casos Detallados');
+
+            sheetCasos.columns = [
+                { header: 'ID Caso', key: 'caso_id', width: 10 },
+                { header: 'Cliente', key: 'cliente_nombre', width: 20 },
+                { header: 'Abogado', key: 'abogado_nombre', width: 20 },
+                { header: 'Grupo', key: 'grupo_nombre', width: 20 },
+                { header: 'Categorías', key: 'categorias_nombres', width: 30 },
+                { header: 'Descripción', key: 'descripcion', width: 30 },
+                { header: 'Estado', key: 'estado', width: 15 },
+                { header: 'Precio', key: 'precio', width: 15 },
+                { header: 'Fecha Entrega', key: 'fecha_entrega', width: 20 },
+                { header: 'Fecha Devolución', key: 'fecha_devolucion', width: 20 }
+            ];
+
+            detalles.forEach(caso => {
+                const row = sheetCasos.addRow(caso);
+
+                let color = 'FFFFFF'; // blanco
+
+                if (caso.estado === 'Cerrado') color = 'C6EFCE'; // verde
+                else if (caso.estado === 'Abierto') color = 'FFEB9C'; // amarillo
+                else if (caso.estado === 'Pendiente') color = 'FFC7CE'; // rojo
+
+                row.eachCell(cell => {
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: color }
+                    };
+                });
+            });
+
+            // =================
+            // Responder Excel
+            // =================
+            res.setHeader(
+                'Content-Type',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            );
+            res.setHeader(
+                'Content-Disposition',
+                'attachment; filename=casos_exportados.xlsx'
+            );
+
+            await workbook.xlsx.write(res);
+            res.end();
+        });
+    });
+};
