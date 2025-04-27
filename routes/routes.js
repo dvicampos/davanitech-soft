@@ -79,7 +79,7 @@ router.get('/reset-password/:token', controller.showResetPassword);
 router.post('/reset-password', controller.resetPassword);
 router.post('/eliminar-media/:id', controller.deleteMedia);
 
-router.get('/graficas', controller.obtenerDatosCasos);
-router.post('/casos/exportar', controller.exportarExcel); // nueva ruta para exportar
+router.get('/graficas', isAuthenticated, controller.obtenerDatosCasos);
+router.post('/casos/exportar', isAuthenticated, controller.exportarExcel); // nueva ruta para exportar
 
 module.exports = router;

@@ -1770,9 +1770,11 @@ siguiente enlace en tu navegador:</p>
 }
 
 exports.obtenerDatosCasos = (req, res) => { 
-    const grupo_id = req.session.encargado?.grupo_id;
-    if (!grupo_id) return res.status(403).send('Acceso denegado');
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.status(403).send('Acceso denegado');
+    }
 
+    const grupo_id = req.session.encargado.grupo_id;
     const { fechaInicio, fechaFin } = req.query;
 
     let condiciones = `casos.grupo_id = ?`;
@@ -1817,20 +1819,39 @@ exports.obtenerDatosCasos = (req, res) => {
         GROUP BY 
             casos.id
     `;
-    
 
-    db.query(query, valores, (err, results) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send('Error al obtener los casos');
+    // Obtener el grupo del encargado logueado
+    db.query(
+        `SELECT * FROM grupos WHERE id = ?`,
+        [grupo_id],
+        (err, grupoResults) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send('Error al obtener el grupo');
+            }
+
+            // Si no se encuentra el grupo
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado');
+            }
+
+            // Obtener los casos
+            db.query(query, valores, (err2, results) => {
+                if (err2) {
+                    console.error(err2);
+                    return res.status(500).send('Error al obtener los casos');
+                }
+
+                res.render('graficas', {
+                    grupo: grupoResults[0],  // El grupo del encargado logueado
+                    casos: results,
+                    grupo_nombre: grupoResults[0].nombre_empresa // Nombre del grupo
+                });
+            });
         }
-
-        res.render('graficas', {
-            grupo: { nombre_empresa: results[0]?.grupo_nombre || 'Desconocido' },
-            casos: results
-        });
-    });
+    );
 };
+
 
 const ExcelJS = require('exceljs');
 
