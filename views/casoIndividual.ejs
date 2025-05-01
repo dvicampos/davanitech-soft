@@ -85,6 +85,36 @@ Date(caso.fecha_devolucion).toLocaleString() %></p>
                 <% }) %>
             </tbody>
         </table>
+
+        <% 
+        const precioBase = parseFloat(caso.precio) || 0;
+        const pagoExtra = parseFloat(caso.pago_extra) || 0;
+        const pagoAnticipo = parseFloat(caso.pago_anticipo) || 0;
+
+        const totalSinAnticipo = precioBase + pagoExtra;
+        const totalFinal = totalSinAnticipo - pagoAnticipo;
+    %>
+
+    <!-- Total base -->
+    <p class="total">Total del pedido: <strong>$<%= precioBase.toFixed(2) %></strong></p>
+
+    <!-- Pago extra si existe -->
+    <% if (pagoExtra > 0) { %>
+    <p class="total"><%= caso.nombre_pago_extra || 'Pago extra' %>: <strong>$<%= pagoExtra.toFixed(2) %></strong></p>
+    <% } %>
+
+    <!-- Anticipo si existe -->
+    <% if (pagoAnticipo > 0) { %>
+    <p class="total">Anticipo: <strong>$<%= pagoAnticipo.toFixed(2) %></strong></p>
+    <% } %>
+
+    <!-- Total final -->
+    <p class="total"><strong>Total a pagar: $<%= totalFinal.toFixed(2) %></strong></p>
+
+    <!-- Comentarios si existen -->
+    <% if (caso.comentarios_adicionales) { %>
+    <p class="total">Comentarios: <strong><%= caso.comentarios_adicionales %></strong></p>
+    <% } %>
         
         <h2 class="text-center">Contacto directo</h2>
         <div class="row contact-info bg-success text-white text-center">

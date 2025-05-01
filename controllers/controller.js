@@ -808,7 +808,11 @@ exports.casoIndividual = (req, res) => {
             casos.estado,
             casos.fecha_entrega, 
             casos.fecha_devolucion,
-            casos.precio
+            casos.precio,
+            casos.pago_anticipo,
+            casos.pago_extra,
+            casos.nombre_pago_extra,
+            casos.comentarios_adicionales
         FROM 
             casos 
         JOIN 
@@ -842,7 +846,7 @@ exports.casoIndividual = (req, res) => {
 };
 
 exports.crearCasoPost = (req, res) => {
-    const { cliente_id, abogado_id, descripcion, estado, categoria_id, categoria_cantidad, fecha_entrega, fecha_devolucion } = req.body;
+    const { cliente_id, abogado_id, descripcion, estado, categoria_id, categoria_cantidad, fecha_entrega, fecha_devolucion, pago_anticipo, pago_extra, nombre_pago_extra, comentarios_adicionales } = req.body;
 
     if (!req.session.encargado || !req.session.encargado.grupo_id) {
         console.error('Error: No se encontró grupo_id en la sesión');
@@ -874,10 +878,22 @@ exports.crearCasoPost = (req, res) => {
             precioTotal += categoria.precio * cantidad;
         });
 
+        
+
+        const pago_anticipo_conv = parseFloat(req.body.pago_anticipo?.trim() || 0);
+        const pago_extra_conv = parseFloat(req.body.pago_extra?.trim() || 0);
+        const nombre_pago_extra_conv = req.body.nombre_pago_extra?.trim() || 'No aplica';
+        const comentarios_adicionales_conv = req.body.comentarios_adicionales?.trim() || 'Sin comentarios adicionales';
+
+        precioTotal = parseFloat(precioTotal) || 0;
+        precioTotal += pago_extra_conv;
         precioTotal = precioTotal.toFixed(2);
 
-        db.query('INSERT INTO casos (cliente_id, abogado_id, descripcion, estado, precio, fecha_entrega, fecha_devolucion, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [cliente_id, abogado_id, descripcion, estado, precioTotal, fecha_entrega, fecha_devolucion, grupo_id], (err, result) => {
+        
+        console.log("pago extra: " + pago_anticipo_conv)
+        console.log("pago totoal: " + precioTotal)
+        db.query('INSERT INTO casos (cliente_id, abogado_id, descripcion, estado, precio, fecha_entrega, fecha_devolucion, grupo_id, pago_anticipo, pago_extra, nombre_pago_extra, comentarios_adicionales) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [cliente_id, abogado_id, descripcion, estado, precioTotal, fecha_entrega, fecha_devolucion, grupo_id, pago_anticipo_conv, pago_extra_conv, nombre_pago_extra_conv, comentarios_adicionales_conv], (err, result) => {
                 if (err) {
                     console.error('Error al insertar el caso:', err);
                     return res.render('mensaje', { layout: false, mensaje: 'Error al insertar el caso.', tipo: 'error' });
@@ -1104,13 +1120,39 @@ exports.editarCaso = (req, res) => {
 
 exports.editarCasoPost = (req, res) => {
     const { id } = req.params;
-    const { cliente_id, abogado_id, categoria_id, categoria_cantidad, descripcion, estado, precio, fecha_entrega, fecha_devolucion } = req.body;
+    const {
+        cliente_id, abogado_id, categoria_id, categoria_cantidad,
+        descripcion, estado, precio,
+        fecha_entrega, fecha_devolucion,
+        pago_extra, pago_anticipo, nombre_pago_extra, comentarios_adicionales
+    } = req.body;
 
     const categoriasArray = Array.isArray(categoria_id) ? categoria_id : [categoria_id];
     const cantidadesArray = Array.isArray(categoria_cantidad) ? categoria_cantidad : [categoria_cantidad];
 
-    db.query('UPDATE casos SET cliente_id = ?, abogado_id = ?, descripcion = ?, estado = ?, precio = ?, fecha_entrega = ?, fecha_devolucion = ? WHERE id = ?',
-        [cliente_id, abogado_id, descripcion, estado, precio, fecha_entrega, fecha_devolucion, id], (err) => {
+    // Convertir a números seguros
+    const precioBase = parseFloat(precio) || 0;
+    const pagoExtraConv = parseFloat(pago_extra?.trim() || 0);
+    const pagoAnticipoConv = parseFloat(pago_anticipo?.trim() || 0);
+    const nombrePagoExtraConv = nombre_pago_extra?.trim() || 'No aplica';
+    const comentariosAdicionalesConv = comentarios_adicionales?.trim() || 'Sin comentarios';
+
+    // Calcular total
+    const precioFinal = (precioBase + pagoExtraConv - pagoAnticipoConv).toFixed(2);
+
+    db.query(
+        `UPDATE casos 
+         SET cliente_id = ?, abogado_id = ?, descripcion = ?, estado = ?, precio = ?, 
+             fecha_entrega = ?, fecha_devolucion = ?, 
+             pago_anticipo = ?, pago_extra = ?, nombre_pago_extra = ?, comentarios_adicionales = ?
+         WHERE id = ?`,
+        [
+            cliente_id, abogado_id, descripcion, estado, precioFinal,
+            fecha_entrega, fecha_devolucion,
+            pagoAnticipoConv, pagoExtraConv, nombrePagoExtraConv, comentariosAdicionalesConv,
+            id
+        ],
+        (err) => {
             if (err) throw err;
 
             db.query('DELETE FROM caso_categorias WHERE caso_id = ?', [id], (err) => {
@@ -1176,7 +1218,11 @@ exports.generarPDF = (req, res) => {
             casos.fecha_creacion,
             casos.fecha_entrega, 
             casos.fecha_devolucion,
-            casos.grupo_id
+            casos.grupo_id,
+            casos.pago_anticipo,
+            casos.pago_extra,
+            casos.nombre_pago_extra,
+            casos.comentarios_adicionales
         FROM casos 
         JOIN clientes ON casos.cliente_id = clientes.id 
         JOIN encargados ON casos.abogado_id = encargados.id 

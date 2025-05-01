@@ -25,17 +25,37 @@
     </div>
     <div class="form-group">
         <label for="categorias">Categorías</label>
-        <% categorias.forEach(categoria => { %>
-            <div class="checkbox">
+        <% categorias.forEach(categoria => { 
+            const categoriaEnCaso = casoCategorias.find(c => c.categoria_id === categoria.id);
+            const cantidadSeleccionada = categoriaEnCaso?.cantidad || 1;
+            const stockDisponible = categoria.stock || 0;
+            const estaSeleccionado = !!categoriaEnCaso;
+        %>
+            <div class="checkbox mb-2">
                 <label>
-                    <input type="checkbox" name="categoria_id[]" value="<%= categoria.id %>" data-precio="<%= categoria.precio %>" 
-                           <%= casoCategorias.find(c => c.categoria_id === categoria.id) ? 'checked' : '' %>>
-                    <%= categoria.nombre %> - $<%= categoria.precio %>
+                    <input type="checkbox"
+                           name="categoria_id[]"
+                           value="<%= categoria.id %>"
+                           data-precio="<%= categoria.precio %>"
+                           <%= estaSeleccionado ? 'checked' : '' %>
+                           <%= stockDisponible === 0 ? 'disabled' : '' %>>
+                    <%= categoria.nombre %> - $<%= categoria.precio %> 
+                    (<strong>Stock: <%= stockDisponible %></strong>)
+                    <% if (stockDisponible === 0) { %>
+                        <span class="text-danger"> - Sin stock</span>
+                    <% } %>
                 </label>
-                <input type="number" name="categoria_cantidad[]" class="form-control" min="1" value="<%= casoCategorias.find(c => c.categoria_id === categoria.id)?.cantidad || 1 %>">
+                <input type="number"
+                       name="categoria_cantidad[]"
+                       class="form-control"
+                       min="1"
+                       max="<%= stockDisponible %>"
+                       value="<%= Math.min(cantidadSeleccionada, stockDisponible) %>"
+                       <%= stockDisponible === 0 ? 'disabled' : '' %>>
             </div>
         <% }); %>
     </div>
+    
     <div class="form-group">
         <label for="descripcion">Ubicacion</label>
         <textarea name="descripcion" class="form-control" placeholder="Descripción" required><%= caso.descripcion %></textarea>
@@ -56,6 +76,27 @@
         <label for="fecha_devolucion">Fecha de Devolución</label>
         <input type="datetime-local" name="fecha_devolucion" class="form-control" required value="<%= new Date(caso.fecha_devolucion).toISOString().substring(0, 16) %>">
     </div>
+
+    <div class="form-group">
+        <label for="pago_anticipo">Pago de Anticipo</label>
+        <input type="text" value="<%= caso.pago_anticipo %>" name="pago_anticipo" class="form-control" placeholder="Monto o detalles del anticipo">
+    </div>
+    
+    <div class="form-group">
+        <label for="pago_extra">Pago Extra</label>
+        <input type="text" value="<%= caso.pago_extra %>" name="pago_extra" class="form-control" placeholder="Monto del pago extra si aplica">
+    </div>
+    
+    <div class="form-group">
+        <label for="nombre_pago_extra">Nombre del Pago Extra</label>
+        <input type="text" value="<%= caso.nombre_pago_extra %>" name="nombre_pago_extra" class="form-control" placeholder="Concepto del pago extra">
+    </div>
+    
+    <div class="form-group">
+        <label for="comentarios_adicionales">Comentarios Adicionales</label>
+        <textarea name="comentarios_adicionales" value="<%= caso.comentarios_adicionales %>" class="form-control" placeholder="Agrega cualquier comentario extra..."></textarea>
+    </div>
+
     <div class="form-group">
         <label for="precio">Precio Total de renta</label>
         <input type="number" name="precio" class="form-control" step="0.01" value="<%= caso.precio %>" readonly>

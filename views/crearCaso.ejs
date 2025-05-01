@@ -92,6 +92,27 @@ required></textarea>
         <label for="fecha_devolucion">Fecha de Devolución</label>
         <input type="datetime-local" name="fecha_devolucion" class="form-control" required>
     </div>
+    
+    <div class="form-group">
+        <label for="pago_anticipo">Pago de Anticipo</label>
+        <input type="text" name="pago_anticipo" class="form-control" placeholder="Monto o detalles del anticipo">
+    </div>
+    
+    <div class="form-group">
+        <label for="pago_extra">Pago Extra</label>
+        <input type="text" name="pago_extra" class="form-control" placeholder="Monto del pago extra si aplica">
+    </div>
+    
+    <div class="form-group">
+        <label for="nombre_pago_extra">Nombre del Pago Extra</label>
+        <input type="text" name="nombre_pago_extra" class="form-control" placeholder="Concepto del pago extra">
+    </div>
+    
+    <div class="form-group">
+        <label for="comentarios_adicionales">Comentarios Adicionales</label>
+        <textarea name="comentarios_adicionales" class="form-control" placeholder="Agrega cualquier comentario extra..."></textarea>
+    </div>
+
     <div class="form-group">
         <label for="precio">Precio Total de renta</label>
         <input type="number" name="precio" class="form-control" step="0.01" readonly>
