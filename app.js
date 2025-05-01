@@ -32,6 +32,7 @@ app.use(session({
 // Rutas
 app.use('/', routes);
 
+app.use('/ads.txt', express.static(path.join(__dirname, 'ads.txt')));
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor escuchando en http://0.0.0.0:${PORT}`);
 });

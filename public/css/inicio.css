@@ -147,7 +147,7 @@ header .textos h3 {
 }
 
 .main .planes article {
-	width: 50%;
+	width: 100%;
 	float: left;
 	padding: 20px;
 }
@@ -162,7 +162,7 @@ header .textos h3 {
 .main .planes article .plan {
 	overflow: hidden;
 	margin: 30px;
-	padding: 20px;
+	padding: 50px;
 	border: 4px outset #110606;
 }
 
