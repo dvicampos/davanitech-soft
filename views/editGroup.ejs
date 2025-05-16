@@ -14,34 +14,53 @@
         </div>
 
         <div class="mb-3">
-            <label for="nombre_empresa" class="form-label">Nombre de la Empresa:</label>
+            <label for="nombre_empresa" class="form-label">Nombre de la Empresa (*):</label>
             <input type="text" class="form-control" id="nombre_empresa" name="nombre_empresa" value="<%= grupo.nombre_empresa %>" required>
         </div>
     
         <div class="mb-3">
-            <label for="rubro" class="form-label">Rubro:</label>
+            <label for="rubro" class="form-label">Rubro (*):</label>
             <input type="text" class="form-control" id="rubro" name="rubro" value="<%= grupo.rubro %>" required>
         </div>
-    
+
         <div class="mb-3">
-            <label for="descripcion" class="form-label">Descripción:</label>
-            <textarea class="form-control" id="descripcion" name="descripcion" rows="4" required><%= grupo.descripcion %></textarea>
+            <label for="slogan" class="form-label">Slogan:</label>
+            <input type="text" class="form-control" id="slogan" name="slogan" value="<%= grupo.slogan %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="rfc" class="form-label">RFC (si aplica):</label>
+            <input type="text" class="form-control" id="rfc" name="rfc" value="<%= grupo.rfc %>">
         </div>
     
         <div class="mb-3">
-            <label for="ubicacion" class="form-label">Ubicación:</label>
+            <label for="descripcion" class="form-label">Descripción (*):</label>
+            <textarea class="form-control" id="descripcion" name="descripcion" rows="4" required><%= grupo.descripcion %></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="mision" class="form-label">Mision:</label>
+            <textarea class="form-control" id="mision" name="mision" rows="4" required><%= grupo.mision %></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="vision" class="form-label">Vision:</label>
+            <textarea class="form-control" id="vision" name="vision" rows="4" required><%= grupo.vision %></textarea>
+        </div>
+    
+        <div class="mb-3">
+            <label for="ubicacion" class="form-label">Ubicación (*):</label>
             <input type="text" class="form-control" id="ubicacion" name="ubicacion" value="<%= grupo.ubicacion %>" required>
         </div>
         <div class="mb-3">
-            <label for="horario" class="form-label">Horario:</label>
+            <label for="horario" class="form-label">Horario (*):</label>
             <input type="text" class="form-control" id="horario" name="horario" value="<%= grupo.horario %>" required>
         </div>
         <div class="mb-3">
-            <label for="telefono" class="form-label">Telefono:</label>
+            <label for="telefono" class="form-label">Telefono (*):</label>
             <input type="text" class="form-control" id="telefono" name="telefono" value="<%= grupo.telefono %>" required>
         </div>
         <div class="mb-3">
-            <label for="email" class="form-label">Email:</label>
+            <label for="email" class="form-label">Email (*):</label>
             <input type="text" class="form-control" id="email" name="email" value="<%= grupo.email %>" required>
         </div>
         <div class="mb-3">

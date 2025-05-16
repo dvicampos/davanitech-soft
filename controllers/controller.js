@@ -104,10 +104,10 @@ exports.createGroup = (req, res) => {
 };
 
 exports.createGroupPost = (req, res) => {
-    const { nombre_empresa, rubro, descripcion, ubicacion, horario, telefono, email, facebook, tiktok } = req.body;
+    const { nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok } = req.body;
 
-    db.query('INSERT INTO grupos (nombre_empresa, rubro, descripcion, ubicacion, horario, telefono, email, facebook, tiktok) VALUES (?, ?, ?, ?, ?, ?, ? ,?, ?)',
-        [nombre_empresa, rubro, descripcion, ubicacion, horario, telefono, email, facebook, tiktok],
+    db.query('INSERT INTO grupos (nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok) VALUES (?, ?, ?, ?, ?, ?, ? ,?, ?)',
+        [nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok],
         (err, results) => {
             if (err) {
                 console.error(err);
@@ -209,7 +209,7 @@ exports.updateGroup = (req, res) => {
         }
 
         const {
-            nombre_empresa, rubro, descripcion, ubicacion,
+            nombre_empresa, slogan, rubro, mision, vision, rfc, descripcion, ubicacion,
             horario, telefono, email, facebook, tiktok, terminos, color_grupo
         } = req.body;
 
@@ -222,8 +222,8 @@ exports.updateGroup = (req, res) => {
             return res.render('mensaje', { layout: false, mensaje: 'Los campos con * son obligatorios.', tipo: 'error' });
         }
 
-        let query = 'UPDATE grupos SET nombre_empresa = ?, rubro = ?, descripcion = ?, ubicacion = ?, horario= ?, telefono= ?, email= ?, facebook= ?, tiktok= ?, terminos= ?, color_grupo =?';
-        let queryParams = [nombre_empresa, rubro, descripcion, ubicacion, horario, telefono, email, facebook, tiktok, terminos,color_grupo];
+        let query = 'UPDATE grupos SET nombre_empresa = ?, slogan = ?, rubro = ?, mision = ?, vision = ?, rfc = ?, descripcion = ?, ubicacion = ?, horario= ?, telefono= ?, email= ?, facebook= ?, tiktok= ?, terminos= ?, color_grupo =?';
+        let queryParams = [nombre_empresa, slogan, rubro, mision, vision, rfc, descripcion, ubicacion, horario, telefono, email, facebook, tiktok, terminos,color_grupo];
 
         if (foto_perfil) {
             query += ', foto_perfil = ?';
