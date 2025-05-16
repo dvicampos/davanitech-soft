@@ -85,6 +85,15 @@ router.get('/contacto/:id/editar', isAuthenticated, controller.obtenerContactoPa
 router.post('/contacto/:id/editar', isAuthenticated, controller.editarContacto);
 router.get('/contacto/:id/eliminar', isAuthenticated, controller.eliminarContacto);
 
+router.get('/blogs/', isAuthenticated, controller.listarPublicaciones);
+// router.get('/blog/:grupoId', isAuthenticated, controller.leerPublicaciones);
+router.get('/blog/:grupoId/nueva', isAuthenticated, controller.crearPublicacionForm);
+router.post('/blog/:grupoId/nueva', isAuthenticated, controller.crearPublicacion);
+router.get('/blog/:id/editar', isAuthenticated, controller.obtenerPublicacionParaEditar);
+router.post('/blog/:id/editar', isAuthenticated, controller.editarPublicacion);
+router.post('/blog/:id/eliminar', isAuthenticated, controller.eliminarPublicacion);
+router.get('/blog/:id', controller.verPublicacionIndividual);
+
 router.get('/graficas', isAuthenticated, controller.obtenerDatosCasos);
 router.post('/casos/exportar', isAuthenticated, controller.exportarExcel); // nueva ruta para exportar
 

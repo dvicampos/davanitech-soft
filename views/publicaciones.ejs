@@ -1,0 +1,71 @@
+<style>
+    .badge {
+        font-size: 1.1em;
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .btn-sm {
+        font-size: 0.9em;
+        padding: 5px 10px;
+        margin: 2px;
+    }
+    .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 3px;
+    }
+    .actions form {
+        display: inline;
+    }
+</style>
+
+<h1 class="text-center mb-4">📝 Publicaciones</h1>
+
+<div class="text-center mb-3">
+    <a href="/blog/<%= grupoId %>/nueva" class="btn btn-primary">
+        <i class="fa fa-plus me-1"></i> Crear nueva publicación
+    </a>
+</div>
+
+<% if (publicaciones && publicaciones.length > 0) { %>
+    <div class="table-wrapper">
+        <table class="table table-bordered text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Contenido</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% publicaciones.forEach(pub => { %>
+                    <tr>
+                        <td><%= pub.id %></td>
+                        <td><%= pub.titulo %></td>
+                        <td><%= pub.contenido.length > 100 ? pub.contenido.substring(0, 100) + '...' : pub.contenido %></td>
+                        <td><%= new Date(pub.fecha).toLocaleDateString() %></td>
+                        <td class="actions">
+                            <a href="/blog/<%= pub.id %>/editar" class="btn btn-warning btn-sm">✏️</a>
+                            <form action="/blog/<%= pub.id %>/eliminar" method="POST" style="display:inline" onsubmit="return confirm('¿Seguro que quieres eliminar esta publicación?')">
+                                <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+<% } else { %>
+    <div class="alert alert-info text-center">
+        No hay publicaciones para mostrar.
+    </div>
+<% } %>
+
+<a href="/dashboard" class="btn btn-outline-dark mt-4">🔙 Regresar</a>

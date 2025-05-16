@@ -210,6 +210,34 @@ grupo">
         </div>
     </div>
 </section>
+<!-- Sección de Blogs del Grupo -->
+<section>
+    <h2 class="text-center my-5 text-primary">Publicaciones recientes</h2>
+    <div class="container">
+        <div class="row">
+            <% if (blogs && blogs.length > 0) { %>
+                <% blogs.forEach(blog => { %>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <% if (blog.imagen) { %>
+                                <img src="/<%= blog.imagen %>" class="card-img-top" alt="<%= blog.titulo %>">
+                            <% } %>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title"><%= blog.titulo %></h5>
+                                <p class="card-text text-muted" style="font-size: 0.9em;"><i class="bi bi-calendar-event me-1"></i> <%= blog.fecha %></p>
+                                <p class="card-text"><%= blog.contenido.substring(0, 120) %>...</p>
+                                <a href="/blog/<%= blog.id %>" class="mt-auto btn btn-outline-primary btn-sm">Leer más</a>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p class="text-muted text-center">Este grupo aún no ha publicado ningún blog.</p>
+            <% } %>
+        </div>
+    </div>
+</section>
+
 <footer>
     <p>© <%= new Date().getFullYear() %> <%= grupo.nombre_empresa %>. Todos los derechos reservados.</p>
     <p><strong>Términos y Condiciones:</strong> <%= grupo.terminos %></p>

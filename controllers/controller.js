@@ -261,6 +261,44 @@ exports.updateGroup = (req, res) => {
     });
 };
 
+// exports.showGroup = (req, res) => {
+//     const grupo_id = req.params.id;
+
+//     if (!grupo_id) {
+//         return res.render('mensaje', { layout: false, mensaje: 'Error al obtener grupo.', tipo: 'error' });
+//     }
+
+//     const queryGrupo = 'SELECT * FROM grupos WHERE id = ?';
+//     const queryMedia = 'SELECT * FROM media WHERE grupo_id = ?';
+
+//     db.query(queryGrupo, [grupo_id], (err, grupoResults) => {
+//         if (err) {
+//             console.error('Error al obtener el grupo:', err);
+//             return res.render('mensaje', { layout: false, mensaje: 'Error al obtener informacion del grupo.', tipo: 'error' });
+//         }
+
+//         if (grupoResults.length === 0) {
+//             return res.render('mensaje', { layout: false, mensaje: 'Grupo no encontrado.', tipo: 'error' });
+//         }
+
+//         const grupo = grupoResults[0];
+
+//         // Consultar archivos multimedia
+//         db.query(queryMedia, [grupo_id], (err, mediaResults) => {
+//             if (err) {
+//                 console.error('Error al obtener archivos multimedia:', err);
+//                 return res.render('mensaje', { layout: false, mensaje: 'Error al obteenr archivos multimedia.', tipo: 'error' });
+//             }
+
+//             res.render('grupo', {
+//                 layout: false,
+//                 grupo,
+//                 media: mediaResults
+//             });
+//         });
+//     });
+// };
+
 exports.showGroup = (req, res) => {
     const grupo_id = req.params.id;
 
@@ -270,11 +308,12 @@ exports.showGroup = (req, res) => {
 
     const queryGrupo = 'SELECT * FROM grupos WHERE id = ?';
     const queryMedia = 'SELECT * FROM media WHERE grupo_id = ?';
+    const queryBlogs = 'SELECT * FROM publicaciones_blog WHERE grupo_id = ? ORDER BY fecha DESC'; // o el nombre de tu tabla de blogs
 
     db.query(queryGrupo, [grupo_id], (err, grupoResults) => {
         if (err) {
             console.error('Error al obtener el grupo:', err);
-            return res.render('mensaje', { layout: false, mensaje: 'Error al obtener informacion del grupo.', tipo: 'error' });
+            return res.render('mensaje', { layout: false, mensaje: 'Error al obtener información del grupo.', tipo: 'error' });
         }
 
         if (grupoResults.length === 0) {
@@ -283,17 +322,26 @@ exports.showGroup = (req, res) => {
 
         const grupo = grupoResults[0];
 
-        // Consultar archivos multimedia
+        // Consultar multimedia
         db.query(queryMedia, [grupo_id], (err, mediaResults) => {
             if (err) {
                 console.error('Error al obtener archivos multimedia:', err);
-                return res.render('mensaje', { layout: false, mensaje: 'Error al obteenr archivos multimedia.', tipo: 'error' });
+                return res.render('mensaje', { layout: false, mensaje: 'Error al obtener archivos multimedia.', tipo: 'error' });
             }
 
-            res.render('grupo', {
-                layout: false,
-                grupo,
-                media: mediaResults
+            // Consultar publicaciones del blog
+            db.query(queryBlogs, [grupo_id], (err, blogResults) => {
+                if (err) {
+                    console.error('Error al obtener publicaciones del blog:', err);
+                    return res.render('mensaje', { layout: false, mensaje: 'Error al obtener publicaciones.', tipo: 'error' });
+                }
+
+                res.render('grupo', {
+                    layout: false,
+                    grupo,
+                    media: mediaResults,
+                    blogs: blogResults
+                });
             });
         });
     });
@@ -2220,5 +2268,275 @@ exports.eliminarContacto = (req, res) => {
             return res.status(500).send('Error al eliminar el contacto.');
         }
         res.redirect('/contactos');
+    });
+};
+
+// Controlador para crear publicación con multer
+exports.crearPublicacion = (req, res) => {
+    upload.array('archivos', 10)(req, res, (err) => {
+        if (err) {
+            console.error('Error al subir archivos:', err);
+            return res.status(500).send('Error al subir archivos');
+        }
+
+        const { titulo, contenido } = req.body;
+        const archivos = req.files;
+
+        if (!req.session.encargado || !req.session.encargado.grupo_id) {
+            return res.redirect('/login');
+        }
+
+        const grupo_id = req.session.encargado.grupo_id;
+        const rol = req.session.encargado.especialidad;
+
+        // Opcional: si necesitas info del grupo para algo acá, la puedes obtener así:
+        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (errGrupo, grupoResults) => {
+            if (errGrupo || grupoResults.length === 0) {
+                console.error('Error al obtener grupo:', errGrupo);
+                return res.status(500).send('Error al obtener grupo');
+            }
+
+            const grupo = grupoResults[0];
+
+            db.query(
+                'INSERT INTO publicaciones_blog (grupo_id, titulo, contenido) VALUES (?, ?, ?)',
+                [grupo_id, titulo, contenido],
+                (err, result) => {
+                    if (err) {
+                        console.error('Error al crear la publicación:', err);
+                        return res.status(500).send('Error al crear publicación');
+                    }
+
+                    const publicacion_id = result.insertId;
+
+                    if (archivos && archivos.length > 0) {
+                        const insertArchivos = archivos.map(file => {
+                            const ext = path.extname(file.originalname).toLowerCase();
+                            const tipo = ['.mp4', '.webm'].includes(ext) ? 'video' : 'imagen';
+                            return [publicacion_id, 'uploads/' + file.filename, tipo];
+                        });
+
+                        db.query(
+                            'INSERT INTO publicaciones_archivos (publicacion_id, archivo, tipo) VALUES ?',
+                            [insertArchivos],
+                            (err2) => {
+                                if (err2) {
+                                    console.error('Error al guardar los archivos:', err2);
+                                    return res.status(500).send('Error al guardar archivos');
+                                }
+                                res.redirect('/blogs');
+                            }
+                        );
+                    } else {
+                        res.redirect('/blogs');
+                    }
+                }
+            );
+        });
+    });
+};
+
+// Mostrar formulario para crear una publicación en un grupo específico
+exports.crearPublicacionForm = (req, res) => {
+    const grupoId = req.params.grupoId;
+
+    // Validar sesión y grupo
+    if (!req.session.encargado || req.session.encargado.grupo_id != grupoId) {
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const rol = req.session.encargado.especialidad;
+
+    db.query('SELECT * FROM grupos WHERE id = ?', [grupoId], (err, grupoResults) => {
+        if (err) {
+            console.error('Error al obtener grupo:', err);
+            return res.status(500).send('Error al obtener grupo');
+        }
+        if (grupoResults.length === 0) {
+            return res.status(404).send('Grupo no encontrado');
+        }
+
+        const grupo = grupoResults[0];
+
+        // Renderiza la vista del formulario, pasando grupoId, grupo y rol
+        res.render('crearPublicacion', { grupoId, grupo, rol });
+    });
+};
+
+// Obtener publicación para editar
+exports.obtenerPublicacionParaEditar = (req, res) => {
+    const { id } = req.params;
+
+    // Validar sesión y grupo
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupoIdSesion = req.session.encargado.grupo_id;
+
+    // Buscar la publicación y asegurarse que pertenece al grupo del encargado
+    db.query('SELECT * FROM publicaciones_blog WHERE id = ? AND grupo_id = ?', [id, grupoIdSesion], (err, pubRes) => {
+        if (err || pubRes.length === 0) {
+            console.error('Error al obtener la publicación o acceso denegado:', err);
+            return res.status(404).send('Publicación no encontrada o sin permisos');
+        }
+
+        const publicacion = pubRes[0];
+
+        db.query('SELECT * FROM publicaciones_archivos WHERE publicacion_id = ?', [id], (err2, archivos) => {
+            if (err2) {
+                console.error('Error al obtener archivos:', err2);
+                return res.status(500).send('Error al obtener archivos');
+            }
+
+            db.query('SELECT * FROM grupos WHERE id = ?', [grupoIdSesion], (err3, grupoRes) => {
+                if (err3 || grupoRes.length === 0) {
+                    console.error('Error al obtener grupo:', err3);
+                    return res.status(500).send('Error al obtener grupo');
+                }
+
+                res.render('editarBlog', {
+                    publicacion,
+                    archivos,
+                    grupo: grupoRes[0]
+                });
+            });
+        });
+    });
+};
+
+// Editar publicación (solo texto)
+exports.editarPublicacion = (req, res) => {
+    const { id } = req.params;
+    const { titulo, contenido } = req.body;
+
+    // Validar sesión y grupo
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupoIdSesion = req.session.encargado.grupo_id;
+
+    // Actualizar sólo si la publicación pertenece al grupo del encargado
+    db.query(
+        'UPDATE publicaciones_blog SET titulo = ?, contenido = ? WHERE id = ? AND grupo_id = ?',
+        [titulo, contenido, id, grupoIdSesion],
+        (err, result) => {
+            if (err) {
+                console.error('Error al actualizar publicación:', err);
+                return res.status(500).send('Error al actualizar publicación');
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(403).send('No tienes permiso para editar esta publicación');
+            }
+
+            res.redirect('/blogs');
+        }
+    );
+};
+
+// Eliminar publicación y archivos
+exports.eliminarPublicacion = (req, res) => {
+    const { id } = req.params;
+
+    // Validar sesión y grupo
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupoIdSesion = req.session.encargado.grupo_id;
+
+    // Primero eliminar archivos asociados
+    db.query('DELETE FROM publicaciones_archivos WHERE publicacion_id = ?', [id], (err) => {
+        if (err) {
+            console.error('Error al eliminar archivos:', err);
+            return res.status(500).send('Error al eliminar archivos');
+        }
+
+        // Luego eliminar la publicación sólo si pertenece al grupo
+        db.query(
+            'DELETE FROM publicaciones_blog WHERE id = ? AND grupo_id = ?',
+            [id, grupoIdSesion],
+            (err2, result) => {
+                if (err2) {
+                    console.error('Error al eliminar publicación:', err2);
+                    return res.status(500).send('Error al eliminar publicación');
+                }
+
+                if (result.affectedRows === 0) {
+                    return res.status(403).send('No tienes permiso para eliminar esta publicación');
+                }
+
+                res.redirect('/blogs');
+            }
+        );
+    });
+};
+
+exports.listarPublicaciones = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        return res.redirect('/login');
+    }
+
+    const grupoId = req.session.encargado.grupo_id;
+    const rol = req.session.encargado.especialidad;
+
+    const queryPublicaciones = 'SELECT * FROM publicaciones_blog WHERE grupo_id = ? ORDER BY fecha DESC';
+    const queryGrupo = 'SELECT * FROM grupos WHERE id = ?';
+
+    db.query(queryPublicaciones, [grupoId], (err, publicaciones) => {
+        if (err) {
+            console.error('Error al obtener publicaciones:', err);
+            return res.render('mensaje', { layout: false, mensaje: 'Error al cargar publicaciones.', tipo: 'error' });
+        }
+
+        db.query(queryGrupo, [grupoId], (err2, grupoResults) => {
+            if (err2) {
+                console.error('Error al obtener grupo:', err2);
+                return res.render('mensaje', { layout: false, mensaje: 'Error al cargar grupo.', tipo: 'error' });
+            }
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0];
+            res.render('publicaciones', { grupoId, publicaciones, grupo, rol });
+        });
+    });
+};
+
+exports.verPublicacionIndividual = (req, res) => {
+    const blog_id = req.params.id;
+
+    const queryPublicacion = `
+        SELECT pb.*, g.nombre_empresa AS nombre_grupo
+        FROM publicaciones_blog pb
+        LEFT JOIN grupos g ON pb.grupo_id = g.id
+        WHERE pb.id = ?
+    `;
+
+    const queryArchivos = 'SELECT * FROM publicaciones_archivos WHERE publicacion_id = ?';
+
+    db.query(queryPublicacion, [blog_id], (err, results) => {
+        if (err || results.length === 0) {
+            console.error('Error al obtener la publicación:', err);
+            return res.render('mensaje', { layout: false, mensaje: 'Error al cargar la publicación.', tipo: 'error' });
+        }
+
+        const publicacion = results[0];
+
+        db.query(queryArchivos, [blog_id], (err2, archivos) => {
+            if (err2) {
+                console.error('Error al obtener archivos:', err2);
+                return res.render('mensaje', { layout: false, mensaje: 'Error al cargar archivos.', tipo: 'error' });
+            }
+
+            res.render('publicacionIndividual', {
+                layout: false,
+                publicacion,
+                archivos
+            });
+        });
     });
 };

@@ -1,0 +1,49 @@
+<div class="container mt-5">
+    <h2 class="text-center mb-4">📝 Crear Nueva Publicación para el Grupo: <%= grupoId %></h2>
+
+    <form action="/blog/<%= grupoId %>/nueva" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div class="mb-3">
+            <label for="titulo" class="form-label">Título <span class="text-danger">*</span></label>
+            <input type="text" id="titulo" name="titulo" class="form-control" required>
+            <div class="invalid-feedback">Por favor ingresa un título.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="contenido" class="form-label">Contenido <span class="text-danger">*</span></label>
+            <textarea id="contenido" name="contenido" class="form-control" rows="6" required></textarea>
+            <div class="invalid-feedback">Por favor ingresa el contenido.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="archivos" class="form-label">Archivos (imágenes o videos, hasta 10)</label>
+            <input type="file" id="archivos" name="archivos" class="form-control" multiple accept="image/*,video/*">
+            <div class="form-text">Formatos permitidos: .jpg, .png, .mp4, .webm</div>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-success">✅ Crear Publicación</button>
+        </div>
+    </form>
+
+    <div class="text-center mt-3">
+        <a href="/blog/<%= grupoId %>" class="btn btn-outline-dark">🔙 Volver a publicaciones</a>
+    </div>
+</div>
+
+<script>
+    // Validación Bootstrap
+    (() => {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation')
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+
