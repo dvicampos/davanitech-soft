@@ -1762,7 +1762,7 @@ exports.resetPassword = async (req, res) => {
         db.query('UPDATE encargados SET password = ?, reset_token = NULL, reset_expires = NULL WHERE email = ?', 
             [hashedPassword, email], (err) => {
                 if (err) return res.send('Error al actualizar la contraseña.');
-                return res.render('sesiones', { layout: false, mensaje: 'Revisa tu correo para recuperar tu contraseña.', tipo: 'success' });
+                return res.render('sesiones', { layout: false, mensaje: 'Contraseña restablecida con éxito.', tipo: 'success' });
                 // res.send('Contraseña restablecida con éxito.');
             }
         );
@@ -2096,5 +2096,129 @@ exports.exportarExcel = (req, res) => {
             await workbook.xlsx.write(res);
             res.end();
         });
+    });
+};
+
+// contacto
+
+// Crear un nuevo contacto
+exports.crearContacto = (req, res) => {
+    const { nombre, email, telefono, mensaje } = req.body;
+
+    const grupo_id = req.body.grupo_id;
+
+    db.query(
+        'INSERT INTO contacto (nombre, email, telefono, mensaje, grupo_id) VALUES (?, ?, ?, ?, ?)',
+        [nombre, email, telefono, mensaje, grupo_id],
+        (err) => {
+            if (err) {
+                console.error('Error al crear el contacto:', err);
+                return res.status(500).json({ error: 'Error al crear el contacto' });
+            }
+            req.flash('success', 'Tu mensaje fue enviado correctamente. En seguida nos contactaremos con usted.');
+            res.redirect(`/grupo/${grupo_id}`);
+        }
+    );
+};
+
+// Leer todos los contactos del grupo
+exports.leerContactos = (req, res) => {
+    if (!req.session.encargado || !req.session.encargado.grupo_id) {
+        console.error('Error: No se encontró grupo_id en la sesión');
+        return res.status(403).send('Acceso denegado');
+    }
+
+    const grupo_id = req.session.encargado.grupo_id;
+    const rol = req.session.encargado.especialidad;
+
+    const query = `
+        SELECT contacto.*, grupos.nombre_empresa AS grupo_nombre 
+        FROM contacto 
+        LEFT JOIN grupos ON contacto.grupo_id = grupos.id
+        WHERE contacto.grupo_id = ?
+    `;
+
+    db.query(query, [grupo_id], (err, contactos) => {
+        if (err) {
+            console.error('Error al obtener los contactos:', err);
+            return res.status(500).send('Error al obtener los contactos.');
+        }
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0];
+            res.render('contactos', { contactos, grupo, rol });
+        });
+    });
+};
+
+// Obtener un contacto específico para editar
+exports.obtenerContactoParaEditar = (req, res) => {
+    const { id } = req.params;
+
+    db.query('SELECT * FROM contacto WHERE id = ?', [id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el contacto:', err);
+            return res.status(500).send('Error al obtener el contacto.');
+        }
+
+        if (results.length === 0) {
+            return res.status(404).send('Contacto no encontrado.');
+        }
+
+        const contacto = results[0];
+
+        db.query('SELECT * FROM grupos WHERE id = ?', [contacto.grupo_id], (err, grupoResults) => {
+            if (err) {
+                console.error('Error al obtener el grupo:', err);
+                return res.status(500).send('Error al obtener el grupo.');
+            }
+
+            if (grupoResults.length === 0) {
+                return res.status(404).send('Grupo no encontrado.');
+            }
+
+            const grupo = grupoResults[0];
+            res.render('editarContacto', { contacto, grupo });
+        });
+    });
+};
+
+// Editar un contacto existente
+exports.editarContacto = (req, res) => {
+    const { id } = req.params;
+    const { nombre, email, telefono, mensaje } = req.body;
+
+    db.query(
+        'UPDATE contacto SET nombre = ?, email = ?, telefono = ?, mensaje = ? WHERE id = ?',
+        [nombre, email, telefono, mensaje, id],
+        (err) => {
+            if (err) {
+                console.error('Error al editar el contacto:', err);
+                return res.status(500).send('Error al editar el contacto.');
+            }
+            res.redirect('/contactos');
+        }
+    );
+};
+
+// Eliminar un contacto
+exports.eliminarContacto = (req, res) => {
+    const { id } = req.params;
+
+    db.query('DELETE FROM contacto WHERE id = ?', [id], (err) => {
+        if (err) {
+            console.error('Error al eliminar el contacto:', err);
+            return res.status(500).send('Error al eliminar el contacto.');
+        }
+        res.redirect('/contactos');
     });
 };

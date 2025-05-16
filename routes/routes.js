@@ -79,6 +79,12 @@ router.get('/reset-password/:token', controller.showResetPassword);
 router.post('/reset-password', controller.resetPassword);
 router.post('/eliminar-media/:id', controller.deleteMedia);
 
+router.post('/contacto', controller.crearContacto);
+router.get('/contactos', isAuthenticated, controller.leerContactos);
+router.get('/contacto/:id/editar', isAuthenticated, controller.obtenerContactoParaEditar);
+router.post('/contacto/:id/editar', isAuthenticated, controller.editarContacto);
+router.get('/contacto/:id/eliminar', isAuthenticated, controller.eliminarContacto);
+
 router.get('/graficas', isAuthenticated, controller.obtenerDatosCasos);
 router.post('/casos/exportar', isAuthenticated, controller.exportarExcel); // nueva ruta para exportar
 

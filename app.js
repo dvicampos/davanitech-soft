@@ -4,7 +4,7 @@ const path = require('path');
 const session = require('express-session');
 const routes = require('./routes/routes');
 const ejsLayouts = require('express-ejs-layouts');
-
+const flash = require('connect-flash')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,7 +28,11 @@ app.use(session({
     saveUninitialized: true,
     cookie: { secure: false } // Cambia a true si usas HTTPS
 }));
-
+app.use(flash());
+app.use((req, res, next) => {
+    res.locals.messages = req.flash();
+    next();
+});
 // Rutas
 app.use('/', routes);
 

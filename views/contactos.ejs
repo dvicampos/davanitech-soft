@@ -1,0 +1,69 @@
+<style>
+    .badge {
+        font-size: 1.1em;
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .btn-sm {
+        font-size: 0.9em;
+        padding: 5px 10px;
+        margin: 2px;
+    }
+    .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 3px;
+    }
+    .actions form {
+        display: inline;
+    }
+</style>
+
+<h1 class="text-center mb-4">📨 Mensajes de Contacto</h1>
+
+<% if (contactos.length === 0) { %>
+    <div class="alert alert-info text-center">
+        No hay mensajes recibidos aún.
+    </div>
+<% } else { %>
+    <div class="table-wrapper">
+        <table class="table table-bordered text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    <th>Mensaje</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% contactos.forEach(contacto => { %>
+                    <tr>
+                        <td><%= contacto.nombre %></td>
+                        <td><%= contacto.email %></td>
+                        <td><%= contacto.telefono || '—' %></td>
+                        <td><%= contacto.mensaje %></td>
+                        <td><%= contacto.fecha_envio %></td>
+                        <td class="actions">
+                            <% if (rol === 'admin' || rol === 'editor') { %>
+                                <a href="/contacto/<%= contacto.id %>/editar" class="btn btn-warning btn-sm">✏️</a>
+                                <a href="/contacto/<%= contacto.id %>/eliminar" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar este contacto?')">🗑️</a>
+                            <% } else { %>
+                                <span class="text-muted">Sin permisos</span>
+                            <% } %>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+<% } %>
+
+<a href="/dashboard" class="btn btn-outline-dark mt-3">🔙 Regresar</a>
