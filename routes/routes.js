@@ -86,7 +86,6 @@ router.post('/contacto/:id/editar', isAuthenticated, controller.editarContacto);
 router.get('/contacto/:id/eliminar', isAuthenticated, controller.eliminarContacto);
 
 router.get('/blogs/', isAuthenticated, controller.listarPublicaciones);
-// router.get('/blog/:grupoId', isAuthenticated, controller.leerPublicaciones);
 router.get('/blog/:grupoId/nueva', isAuthenticated, controller.crearPublicacionForm);
 router.post('/blog/:grupoId/nueva', isAuthenticated, controller.crearPublicacion);
 router.get('/blog/:id/editar', isAuthenticated, controller.obtenerPublicacionParaEditar);
