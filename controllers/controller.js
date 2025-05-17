@@ -106,7 +106,7 @@ exports.createGroup = (req, res) => {
 exports.createGroupPost = (req, res) => {
     const { nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok } = req.body;
 
-    db.query('INSERT INTO grupos (nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok) VALUES (?, ?, ?, ?, ?, ?, ? ,?, ?)',
+    db.query('INSERT INTO grupos (nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok) VALUES (?, ?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?)',
         [nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok],
         (err, results) => {
             if (err) {
@@ -552,12 +552,12 @@ exports.crearClientePost = (req, res) => {
         return res.redirect('/crearCliente');
     }
 
-    const { nombre, apellido, email, telefono, direccion } = req.body;
+    const { nombre, apellido, email, telefono, rfc, direccion } = req.body;
     const grupo_id = req.session.encargado.grupo_id;
 
     db.query(
-        'INSERT INTO clientes (nombre, apellido, email, telefono, direccion, grupo_id) VALUES (?, ?, ?, ?, ?, ?)',
-        [nombre, apellido, email, telefono, direccion, grupo_id],
+        'INSERT INTO clientes (nombre, apellido, email, telefono, rfc, direccion, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [nombre, apellido, email, telefono, rfc, direccion, grupo_id],
         (err, results) => {
             if (err) {
                 console.error(err);
@@ -604,9 +604,9 @@ exports.editarCliente = (req, res) => {
 
 exports.editarClientePost = (req, res) => {
     const { id } = req.params;
-    const { nombre, apellido, email, telefono, direccion } = req.body;
-    db.query('UPDATE clientes SET nombre = ?, apellido = ?, email = ?, telefono = ?, direccion = ? WHERE id = ?',
-        [nombre, apellido, email, telefono, direccion, id], (err) => {
+    const { nombre, apellido, email, telefono, rfc, direccion } = req.body;
+    db.query('UPDATE clientes SET nombre = ?, apellido = ?, email = ?, telefono = ?, rfc = ?, direccion = ? WHERE id = ?',
+        [nombre, apellido, email, telefono, rfc, direccion, id], (err) => {
             if (err) throw err;
             res.redirect('/clientes');
         });
@@ -1254,6 +1254,7 @@ exports.generarPDF = (req, res) => {
             casos.id, 
             clientes.nombre AS cliente_nombre,
             clientes.apellido AS cliente_apellido, 
+            clientes.rfc AS cliente_rfc, 
             clientes.telefono AS cliente_telefono,
             encargados.nombre AS encargado_nombre, 
             encargados.apellido AS encargado_apellido,
@@ -1277,7 +1278,7 @@ exports.generarPDF = (req, res) => {
         JOIN caso_categorias ON casos.id = caso_categorias.caso_id 
         JOIN categorias ON caso_categorias.categoria_id = categorias.id 
         WHERE casos.id = ? 
-        GROUP BY casos.id, clientes.nombre, clientes.apellido, clientes.telefono, encargados.nombre, encargados.apellido, casos.descripcion, casos.estado, casos.precio, casos.fecha_creacion, casos.fecha_entrega, casos.fecha_devolucion`,
+        GROUP BY casos.id, clientes.nombre, clientes.apellido, clientes.rfc, clientes.telefono, encargados.nombre, encargados.apellido, casos.descripcion, casos.estado, casos.precio, casos.fecha_creacion, casos.fecha_entrega, casos.fecha_devolucion`,
         [id], (err, results) => {
             if (err) {
                 console.error('Error al obtener el caso:', err);
@@ -1295,7 +1296,8 @@ exports.generarPDF = (req, res) => {
                     email, 
                     foto_perfil, 
                     ubicacion,
-                    terminos
+                    terminos,
+                    rfc
                 FROM grupos
                 WHERE id = ?`,
                 [caso.grupo_id], (err, resultsGrupo) => {
