@@ -96,4 +96,8 @@ router.get('/blog/:id', controller.verPublicacionIndividual);
 router.get('/graficas', isAuthenticated, controller.obtenerDatosCasos);
 router.post('/casos/exportar', isAuthenticated, controller.exportarExcel); // nueva ruta para exportar
 
+router.get('/payment-success', controller.paymentSuccess);
+router.get('/payment-failure', controller.paymentFailure);
+router.get('/payment-pending', controller.paymentPending);
+
 module.exports = router;

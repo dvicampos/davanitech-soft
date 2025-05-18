@@ -5,6 +5,7 @@ const QRCode = require('qrcode');
 const multer = require('multer');
 const path = require('path');
 const { createCanvas, loadImage } = require('canvas');
+const { v4: uuidv4 } = require('uuid');
 
 exports.index = (req, res) => {
     res.render('inicio', {layout: false});
@@ -406,63 +407,92 @@ const preferenceClient = new MercadoPago.Preference(mercadopago);
 
 exports.registerPost = async (req, res) => {
     const { nombre, apellido, email, telefono, especialidad, password, grupo_id } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const preference = {
-        items: [{
-            title: "Suscripción unica",
-            quantity: 1,
-            currency_id: "MXN",
-            unit_price: 1000
-        }],
-        payer: { email },
-        back_urls: {
-            success: 
-`https://davanitechnology.com/payment-success?nombre=${nombre}&apellido=${apellido}&email=${email}&telefono=${telefono}&especialidad=${especialidad}&password=${hashedPassword}&grupo_id=${grupo_id}`,
-            failure: "https://davanitechnology.com//payment-failure",
-            pending: "https://davanitechnology.com//payment-pending"
-        },
-        auto_return: "approved"
-    };
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const tempId = uuidv4(); // Identificador único para el registro temporal
 
-    preferenceClient.create({ body: preference })
-        .then(response => {
-            res.redirect(response.init_point); // Redirige al pago
-        })
-        .catch(error => {
-            console.error(error);
-            res.redirect('/register');
-        });
-};
+        // Guardar los datos temporalmente
+        await db.query(
+            'INSERT INTO registro_pendiente (id, nombre, apellido, email, telefono, especialidad, password, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [tempId, nombre, apellido, email, telefono, especialidad, hashedPassword, grupo_id]
+        );
 
-// Manejar el éxito del pago y registrar usuario
-exports.paymentSuccess = async (req, res) => {
-    const { collection_status, nombre, apellido, email, telefono, especialidad, password, grupo_id } = req.query;
+        // Crear preferencia de pago
+        const preference = {
+            items: [{
+                title: "Suscripción única",
+                quantity: 1,
+                currency_id: "MXN",
+                unit_price: 1000
+            }],
+            payer: { email },
+            back_urls: {
+                success: `https://davanitechnology.com/payment-success?id=${tempId}`,
+                failure: "https://davanitechnology.com/payment-failure",
+                pending: "https://davanitechnology.com/payment-pending"
+            },
+            auto_return: "approved"
+        };
 
-    if (collection_status === 'approved') {
-        db.query('INSERT INTO encargados (nombre, apellido, email, telefono, especialidad, password, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [nombre, apellido, email, telefono, especialidad, password, grupo_id], (err, results) => {
-                if (err) {
-                    console.error(err);
-                    return res.redirect('/register');
-                }
+        // Crear y redirigir a la preferencia de MercadoPago
+        const response = await preferenceClient.create({ body: preference });
+        res.redirect(response.init_point);
 
-                const encargadoId = results.insertId;
-                if (grupo_id) {
-                    db.query('INSERT INTO grupo_encargado (grupo_id, encargado_id) VALUES (?, ?)',
-                        [grupo_id, encargadoId], (err) => {
-                            if (err) {
-                                console.error(err);
-                            }
-                        });
-                }
-                res.redirect('/login'); // Registro exitoso, redirige a login
-            });
-    } else {
-        res.redirect('/register'); // Si el pago no fue aprobado, vuelve a registrar
+    } catch (error) {
+        console.error("Error en registerPost:", error);
+        res.redirect('/register');
     }
 };
 
+
+exports.paymentSuccess = async (req, res) => {
+    const { collection_status, id } = req.query;
+
+    if (collection_status === 'approved') {
+        db.query('SELECT * FROM registro_pendiente WHERE id = ?', [id], (err, results) => {
+            if (err || results.length === 0) {
+                console.error(err);
+                return res.redirect('/register');
+            }
+
+            const user = results[0];
+
+            db.query('INSERT INTO encargados (nombre, apellido, email, telefono, especialidad, password, grupo_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [user.nombre, user.apellido, user.email, user.telefono, user.especialidad, user.password, user.grupo_id],
+                (err, results) => {
+                    if (err) {
+                        console.error(err);
+                        return res.redirect('/register');
+                    }
+
+                    const encargadoId = results.insertId;
+                    if (user.grupo_id) {
+                        db.query('INSERT INTO grupo_encargado (grupo_id, encargado_id) VALUES (?, ?)',
+                            [user.grupo_id, encargadoId], (err) => {
+                                if (err) console.error(err);
+                            });
+                    }
+
+                    // Limpia el registro temporal
+                    db.query('DELETE FROM registro_pendiente WHERE id = ?', [id]);
+
+                    res.redirect('/login');
+                });
+        });
+    } else {
+        res.redirect('/register');
+    }
+};
+
+
+exports.paymentFailure = (req, res) => {
+  res.render('payment-failure');
+};
+
+exports.paymentPending = (req, res) => {
+  res.render('payment-pending');
+};
 
 // Cerrar sesión
 exports.logout = (req, res) => {
