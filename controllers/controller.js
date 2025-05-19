@@ -1178,7 +1178,7 @@ exports.editarCasoPost = (req, res) => {
     const { id } = req.params;
     const {
         cliente_id, abogado_id, categoria_id, categoria_cantidad,
-        descripcion, estado, precio,
+        descripcion, estado,
         fecha_entrega, fecha_devolucion,
         pago_extra, pago_anticipo, nombre_pago_extra, comentarios_adicionales
     } = req.body;
@@ -1186,18 +1186,17 @@ exports.editarCasoPost = (req, res) => {
     const categoriasArray = Array.isArray(categoria_id) ? categoria_id : [categoria_id];
     const cantidadesArray = Array.isArray(categoria_cantidad) ? categoria_cantidad : [categoria_cantidad];
 
-    const precioBase = parseFloat(precio) || 0;
     const pagoExtraConv = parseFloat(pago_extra?.trim() || 0);
     const pagoAnticipoConv = parseFloat(pago_anticipo?.trim() || 0);
     const nombrePagoExtraConv = nombre_pago_extra?.trim() || 'No aplica';
     const comentariosAdicionalesConv = comentarios_adicionales?.trim() || 'Sin comentarios';
-    const precioFinal = (precioBase + pagoExtraConv - pagoAnticipoConv).toFixed(2);
 
-    // Paso 1: obtener las cantidades actuales
+    console.log("CATEGORIAS:", categoriasArray);
+    console.log("CANTIDADES:", cantidadesArray);
+
     db.query('SELECT categoria_id, cantidad FROM caso_categorias WHERE caso_id = ?', [id], (err, anteriores) => {
         if (err) throw err;
 
-        // Paso 2: devolver al stock las cantidades antiguas
         const devolverStock = anteriores.map(row => {
             return new Promise((resolve, reject) => {
                 db.query('UPDATE categorias SET stock = stock + ? WHERE id = ?', [row.cantidad, row.categoria_id], (err) => {
@@ -1209,45 +1208,83 @@ exports.editarCasoPost = (req, res) => {
 
         Promise.all(devolverStock)
             .then(() => {
-                // Paso 3: actualizar el caso
+                const obtenerPrecios = categoriasArray.map((catId, i) => {
+                    const cantidad = parseFloat(cantidadesArray[i]) || 0;
+                    const catIdInt = parseInt(catId); // 🔧 Conversión importante
+
+                    return new Promise((resolve, reject) => {
+                        db.query('SELECT precio FROM categorias WHERE id = ?', [catIdInt], (err, result) => {
+                            if (err) return reject(err);
+                            if (!result || result.length === 0) {
+                                console.log(`❌ No se encontró precio para categoría ${catIdInt}`);
+                                return resolve(0);
+                            }
+                            const precioUnitario = parseFloat(result[0].precio) || 0;
+                            console.log(`💲Precio de cat ${catIdInt} x ${cantidad}: ${precioUnitario * cantidad}`);
+                            resolve(precioUnitario * cantidad);
+                        });
+                    });
+                });
+
+                return Promise.all(obtenerPrecios);
+            })
+            .then(subtotales => {
+                console.log("Subtotales:", subtotales);
+                const precioBase = subtotales.reduce((total, actual) => total + actual, 0);
+                const precioFinal = parseFloat((precioBase + pagoExtraConv - pagoAnticipoConv).toFixed(2));
+                console.log("💰 Precio final calculado:", precioFinal);
+
                 db.query(
                     `UPDATE casos SET cliente_id = ?, abogado_id = ?, descripcion = ?, estado = ?, precio = ?, 
-                    fecha_entrega = ?, fecha_devolucion = ?, 
-                    pago_anticipo = ?, pago_extra = ?, nombre_pago_extra = ?, comentarios_adicionales = ?
-                    WHERE id = ?`,
-                    [cliente_id, abogado_id, descripcion, estado, precioFinal,
-                        fecha_entrega, fecha_devolucion, pagoAnticipoConv, pagoExtraConv,
-                        nombrePagoExtraConv, comentariosAdicionalesConv, id],
+                     fecha_entrega = ?, fecha_devolucion = ?, 
+                     pago_anticipo = ?, pago_extra = ?, nombre_pago_extra = ?, comentarios_adicionales = ?
+                     WHERE id = ?`,
+                    [
+                        cliente_id, abogado_id, descripcion, estado, precioFinal,
+                        fecha_entrega, fecha_devolucion,
+                        pagoAnticipoConv, pagoExtraConv, nombrePagoExtraConv,
+                        comentariosAdicionalesConv, id
+                    ],
                     (err) => {
                         if (err) throw err;
 
-                        // Paso 4: eliminar categorías anteriores
                         db.query('DELETE FROM caso_categorias WHERE caso_id = ?', [id], (err) => {
                             if (err) throw err;
 
-                            // Paso 5: insertar nuevas y restar stock
-                            const categoriaQueries = categoriasArray.map((categoriaId, index) => {
-                                const cantidad = parseFloat(cantidadesArray[index]);
-                                return new Promise((resolve, reject) => {
-                                    db.query('INSERT INTO caso_categorias (caso_id, categoria_id, cantidad) VALUES (?, ?, ?)',
-                                        [id, categoriaId, cantidad], (err) => {
-                                            if (err) return reject(err);
+                            const insertarCategorias = categoriasArray.map((categoriaId, i) => {
+                                const cantidad = parseFloat(cantidadesArray[i]) || 0;
+                                const categoriaIdInt = parseInt(categoriaId); // 🔧 Asegura que también sea entero
 
-                                            db.query('UPDATE categorias SET stock = stock - ? WHERE id = ?', [cantidad, categoriaId], (err) => {
-                                                if (err) reject(err);
-                                                else resolve();
-                                            });
-                                        });
+                                return new Promise((resolve, reject) => {
+                                    db.query(
+                                        'INSERT INTO caso_categorias (caso_id, categoria_id, cantidad) VALUES (?, ?, ?)',
+                                        [id, categoriaIdInt, cantidad],
+                                        (err) => {
+                                            if (err) return reject(err);
+                                            db.query(
+                                                'UPDATE categorias SET stock = stock - ? WHERE id = ?',
+                                                [cantidad, categoriaIdInt],
+                                                (err) => {
+                                                    if (err) reject(err);
+                                                    else resolve();
+                                                }
+                                            );
+                                        }
+                                    );
                                 });
                             });
 
-                            Promise.all(categoriaQueries)
+                            Promise.all(insertarCategorias)
                                 .then(() => res.redirect('/casos'))
                                 .catch(err => { throw err; });
                         });
-                    });
+                    }
+                );
             })
-            .catch(err => { throw err; });
+            .catch(err => {
+                console.error("💥 Error general:", err);
+                res.status(500).send("Error actualizando el caso");
+            });
     });
 };
 

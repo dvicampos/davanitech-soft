@@ -67,6 +67,12 @@
         <button type="button" class="btn btn-secondary mb-3" id="addCategoria">+ Añadir categoría</button>
 
         <div class="mb-3">
+            <label for="comentarios_adicionales" class="form-label">Precio</label>
+            <input class="form-control" type="number" value="<%= caso.precio %>" readonly>
+            <input type="hidden" name="precio" value="<%= caso.precio %>">
+        </div>
+
+        <div class="mb-3">
             <label for="fecha_entrega" class="form-label">Fecha de entrega</label>
             <input type="datetime-local" class="form-control" name="fecha_entrega" required
                 value="<%= new Date(caso.fecha_entrega).toISOString().slice(0, 16) %>">
@@ -119,4 +125,10 @@
             }
         }
     });
+
+    document.querySelector('form').addEventListener('submit', () => {
+        document.querySelectorAll('[name="categoria_id"]').forEach(input => input.name = "categoria_id[]");
+        document.querySelectorAll('[name="categoria_cantidad"]').forEach(input => input.name = "categoria_cantidad[]");
+    });
+
 </script>

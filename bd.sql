@@ -15,9 +15,13 @@ CREATE TABLE `grupos` (
   `facebook` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `tiktok` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `color_grupo` varchar(7) COLLATE utf8mb4_general_ci DEFAULT '#ffffff',
+  `rfc` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `slogan` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `mision` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `vision` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nombre_empresa` (`nombre_empresa`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- aseashvt_abogados_asociados.mensajes definition
@@ -28,7 +32,23 @@ CREATE TABLE `mensajes` (
   `correo` varchar(100) NOT NULL,
   `mensaje` text NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- aseashvt_abogados_asociados.registro_pendiente definition
+
+CREATE TABLE `registro_pendiente` (
+  `id` varchar(36) NOT NULL,
+  `nombre` varchar(100) DEFAULT NULL,
+  `apellido` varchar(100) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `telefono` varchar(20) DEFAULT NULL,
+  `especialidad` varchar(100) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
+  `grupo_id` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
 -- aseashvt_abogados_asociados.categorias definition
@@ -62,11 +82,28 @@ CREATE TABLE `clientes` (
   `direccion` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `fecha_registro` datetime DEFAULT CURRENT_TIMESTAMP,
   `grupo_id` int DEFAULT NULL,
+  `rfc` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `fk_caso_clientes_grupo` (`grupo_id`),
   CONSTRAINT `fk_caso_clientes_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupos` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- aseashvt_abogados_asociados.contacto definition
+
+CREATE TABLE `contacto` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `telefono` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `mensaje` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `fecha_envio` datetime DEFAULT CURRENT_TIMESTAMP,
+  `grupo_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_contacto_grupo` (`grupo_id`),
+  CONSTRAINT `fk_contacto_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupos` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- aseashvt_abogados_asociados.encargados definition
@@ -132,6 +169,20 @@ CREATE TABLE `notas` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
+-- aseashvt_abogados_asociados.publicaciones_blog definition
+
+CREATE TABLE `publicaciones_blog` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `grupo_id` int NOT NULL,
+  `titulo` varchar(255) NOT NULL,
+  `contenido` text NOT NULL,
+  `fecha` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `grupo_id` (`grupo_id`),
+  CONSTRAINT `publicaciones_blog_ibfk_1` FOREIGN KEY (`grupo_id`) REFERENCES `grupos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
 -- aseashvt_abogados_asociados.recordatorios definition
 
 CREATE TABLE `recordatorios` (
@@ -191,7 +242,7 @@ CREATE TABLE `casos` (
   CONSTRAINT `casos_ibfk_2` FOREIGN KEY (`abogado_id`) REFERENCES `encargados` (`id`),
   CONSTRAINT `casos_ibfk_3` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`),
   CONSTRAINT `fk_casos_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupos` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- aseashvt_abogados_asociados.documentos definition
@@ -212,6 +263,19 @@ CREATE TABLE `documentos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
+-- aseashvt_abogados_asociados.publicaciones_archivos definition
+
+CREATE TABLE `publicaciones_archivos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `publicacion_id` int NOT NULL,
+  `archivo` varchar(255) NOT NULL,
+  `tipo` enum('imagen','video') NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `publicacion_id` (`publicacion_id`),
+  CONSTRAINT `publicaciones_archivos_ibfk_1` FOREIGN KEY (`publicacion_id`) REFERENCES `publicaciones_blog` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
 -- aseashvt_abogados_asociados.caso_categorias definition
 
 CREATE TABLE `caso_categorias` (
@@ -227,17 +291,4 @@ CREATE TABLE `caso_categorias` (
   CONSTRAINT `caso_categorias_ibfk_1` FOREIGN KEY (`caso_id`) REFERENCES `casos` (`id`),
   CONSTRAINT `caso_categorias_ibfk_2` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`),
   CONSTRAINT `fk_caso_categorias_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupos` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `contacto` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `telefono` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `mensaje` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
-  `fecha_envio` datetime DEFAULT CURRENT_TIMESTAMP,
-  `grupo_id` int DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_contacto_grupo` (`grupo_id`),
-  CONSTRAINT `fk_contacto_grupo` FOREIGN KEY (`grupo_id`) REFERENCES `grupos` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=187 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
