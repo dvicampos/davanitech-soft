@@ -1,5 +1,5 @@
-<div class="container mt-5">
-    <h2 class="mb-4">Crear nuevo caso</h2>
+<div class="container mt-2">
+    <h2 class="mb-4">Crear nuevo servicio</h2>
 
     <form action="/casos/crear" method="POST">
         <div class="mb-3">
@@ -13,9 +13,9 @@
         </div>
 
         <div class="mb-3">
-            <label for="abogado_id" class="form-label">Abogado</label>
+            <label for="abogado_id" class="form-label">Encargado</label>
             <select name="abogado_id" class="form-select" required>
-                <option value="">Seleccione un abogado</option>
+                <option value="">Seleccione un encargado</option>
                 <% encargados.forEach(abogado => { %>
                     <option value="<%= abogado.id %>"><%= abogado.nombre %></option>
                 <% }) %>
@@ -23,7 +23,7 @@
         </div>
 
         <div class="mb-3">
-            <label for="descripcion" class="form-label">Descripción</label>
+            <label for="descripcion" class="form-label">Dirección</label>
             <textarea class="form-control" name="descripcion" rows="3" required></textarea>
         </div>
 
@@ -62,12 +62,12 @@
 
         <div class="mb-3">
             <label for="fecha_entrega" class="form-label">Fecha de entrega</label>
-            <input type="date" class="form-control" name="fecha_entrega" required>
+            <input type="datetime-local" class="form-control" name="fecha_entrega" required>
         </div>
 
         <div class="mb-3">
             <label for="fecha_devolucion" class="form-label">Fecha de devolución</label>
-            <input type="date" class="form-control" name="fecha_devolucion" required>
+            <input type="datetime-local" class="form-control" name="fecha_devolucion" required>
         </div>
 
         <div class="mb-3">
