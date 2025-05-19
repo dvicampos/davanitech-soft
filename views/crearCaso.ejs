@@ -1,143 +1,119 @@
-<style>
-    .card-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
+<div class="container mt-5">
+    <h2 class="mb-4">Crear nuevo caso</h2>
 
-.card {
-    padding: 15px;
-    margin: 10px;
-    background-color: #f9f9f9;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.card:hover {
-    transform: scale(1.05);
-    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-.card-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.card-text {
-    font-size: 1rem;
-    color: #555;
-}
-</style>
-<h1 class="text-center">Crear renta</h1>
-<form action="/casos/crear" method="POST">
-    <div class="form-group">
-        <label for="cliente_id">Cliente</label>
-        <select name="cliente_id" class="form-control" required>
-            <option value="">Seleccionar Cliente</option>
-            <% clientes.forEach(cliente => { %>
-                <option value="<%= cliente.id %>">
-                    <%= cliente.nombre %> <%= cliente.apellido %>
-                </option>
-            <% }); %>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="abogado_id">Encargado</label>
-        <select name="abogado_id" class="form-control" required>
-            <option value="">Seleccionar Encargado</option>
-            <% encargados.forEach(encargado => { %>
-                <option value="<%= encargado.id %>">
-                    <%= encargado.nombre %> <%= encargado.apellido %>
-                </option>
-            <% }); %>
-        </select>
-    </div>
-    <div class="form-group">
-        <h4 class="text-center" for="categorias">Productos</h4>
-        <div class="card-container d-flex flex-wrap">
-            <% categorias.forEach(categoria => { %>
-                <div class="card m-2" style="width: 18rem; border: 1px solid #ddd; border-radius: 8px; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
-                    <div class="card-body">
-                        <h5 class="card-title"><%= categoria.nombre %></h5>
-                        <p class="card-text">Precio: $<%= categoria.precio %></p>
-                        <p class="card-text">Stock disponible: <%= categoria.stock %></p>
-                        <label for="categoria_<%= categoria.id %>">
-                            <input type="checkbox" id="categoria_<%= categoria.id %>" name="categoria_id[]" value="<%= categoria.id %>" data-precio="<%= categoria.precio %>"> Seleccionar
-                        </label>
-                        <input type="number" name="categoria_cantidad[]" class="form-control mt-2" min="1" value="1" placeholder="Cantidad">
-                    </div>
-                </div>
-            <% }); %>
+    <form action="/casos/crear" method="POST">
+        <div class="mb-3">
+            <label for="cliente_id" class="form-label">Cliente</label>
+            <select name="cliente_id" class="form-select" required>
+                <option value="">Seleccione un cliente</option>
+                <% clientes.forEach(cliente => { %>
+                    <option value="<%= cliente.id %>"><%= cliente.nombre %></option>
+                <% }) %>
+            </select>
         </div>
-    </div>
-    <div class="form-group">
-        <label for="descripcion">Ubicacion</label>
-        <textarea name="descripcion" class="form-control" placeholder="Ubicacion de entrega" 
-required></textarea>
-    </div>
-    <div class="form-group">
-        <label for="estado">Estado</label>
-        <select name="estado" class="form-control" required>
-            <option value="">Seleccionar Estado</option>
-            <option value="Abierto">Abierto</option>
-            <option value="Cerrado">Cerrado</option>
-            <option value="Pendiente">Pendiente</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="fecha_entrega">Fecha de Entrega</label>
-        <input type="datetime-local" name="fecha_entrega" class="form-control" required>
-    </div>
-    <div class="form-group">
-        <label for="fecha_devolucion">Fecha de Devolución</label>
-        <input type="datetime-local" name="fecha_devolucion" class="form-control" required>
-    </div>
-    
-    <div class="form-group">
-        <label for="pago_anticipo">Pago de Anticipo</label>
-        <input type="text" name="pago_anticipo" class="form-control" placeholder="Monto o detalles del anticipo">
-    </div>
-    
-    <div class="form-group">
-        <label for="pago_extra">Pago Extra</label>
-        <input type="text" name="pago_extra" class="form-control" placeholder="Monto del pago extra si aplica">
-    </div>
-    
-    <div class="form-group">
-        <label for="nombre_pago_extra">Nombre del Pago Extra</label>
-        <input type="text" name="nombre_pago_extra" class="form-control" placeholder="Concepto del pago extra">
-    </div>
-    
-    <div class="form-group">
-        <label for="comentarios_adicionales">Comentarios Adicionales</label>
-        <textarea name="comentarios_adicionales" class="form-control" placeholder="Agrega cualquier comentario extra..."></textarea>
-    </div>
 
-    <div class="form-group">
-        <label for="precio">Precio Total de renta</label>
-        <input type="number" name="precio" class="form-control" step="0.01" readonly>
-    </div>
+        <div class="mb-3">
+            <label for="abogado_id" class="form-label">Abogado</label>
+            <select name="abogado_id" class="form-select" required>
+                <option value="">Seleccione un abogado</option>
+                <% encargados.forEach(abogado => { %>
+                    <option value="<%= abogado.id %>"><%= abogado.nombre %></option>
+                <% }) %>
+            </select>
+        </div>
 
-    <button type="submit" class="btn btn-primary">Crear</button>
-</form>
-<a href="/casos" class="btn btn-danger mt-3 mb-3">Regresar</a>
+        <div class="mb-3">
+            <label for="descripcion" class="form-label">Descripción</label>
+            <textarea class="form-control" name="descripcion" rows="3" required></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="estado" class="form-label">Estado</label>
+            <select class="form-select" name="estado" required>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Abierto">Abierto</option>
+                <option value="Cerrado">Cerrado</option>
+            </select>
+        </div>
+
+        <!-- Categorías dinámicas -->
+        <div id="categorias-container">
+            <div class="row g-3 align-items-end mb-3 categoria-item">
+                <div class="col-md-6">
+                    <label class="form-label">Categoría</label>
+                    <select name="categoria_id[]" class="form-select" required>
+                        <option value="">Seleccione categoría</option>
+                        <% categorias.forEach(cat => { %>
+                            <option value="<%= cat.id %>"><%= cat.nombre %> (Stock: <%= cat.stock %>)</option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cantidad</label>
+                    <input type="number" name="categoria_cantidad[]" class="form-control" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger btn-sm remove-categoria">X</button>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-secondary mb-3" id="addCategoria">+ Añadir categoría</button>
+
+        <div class="mb-3">
+            <label for="fecha_entrega" class="form-label">Fecha de entrega</label>
+            <input type="date" class="form-control" name="fecha_entrega" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="fecha_devolucion" class="form-label">Fecha de devolución</label>
+            <input type="date" class="form-control" name="fecha_devolucion" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="pago_anticipo" class="form-label">Pago anticipo</label>
+            <input type="number" step="0.01" class="form-control" name="pago_anticipo">
+        </div>
+
+        <div class="mb-3">
+            <label for="pago_extra" class="form-label">Pago extra</label>
+            <input type="number" step="0.01" class="form-control" name="pago_extra">
+        </div>
+
+        <div class="mb-3">
+            <label for="nombre_pago_extra" class="form-label">Nombre del pago extra</label>
+            <input type="text" class="form-control" name="nombre_pago_extra">
+        </div>
+
+        <div class="mb-3">
+            <label for="comentarios_adicionales" class="form-label">Comentarios adicionales</label>
+            <textarea class="form-control" name="comentarios_adicionales" rows="2"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar caso</button>
+    </form>
+</div>
+
 <script>
-    document.querySelectorAll('input[type="checkbox"], input[type="number"]').forEach(element => {
-        element.addEventListener('change', calcularPrecioTotal);
+    document.getElementById('addCategoria').addEventListener('click', () => {
+        const container = document.getElementById('categorias-container');
+        const newItem = document.querySelector('.categoria-item').cloneNode(true);
+        newItem.querySelectorAll('input').forEach(input => input.value = '');
+        newItem.querySelector('select').selectedIndex = 0;
+        container.appendChild(newItem);
     });
 
-    function calcularPrecioTotal() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        let totalPrecio = 0;
-
-        checkboxes.forEach((checkbox, index) => {
-            if (checkbox.checked) {
-                const precio = parseFloat(checkbox.getAttribute('data-precio'));
-                const cantidad = document.querySelectorAll('input[name="categoria_cantidad[]"]')[index].value;
-                totalPrecio += precio * cantidad;
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-categoria')) {
+            const items = document.querySelectorAll('.categoria-item');
+            if (items.length > 1) {
+                e.target.closest('.categoria-item').remove();
             }
-        });
+        }
+    });
 
-        document.querySelector('input[name="precio"]').value = totalPrecio.toFixed(2);
-    }
+    document.querySelector('form').addEventListener('submit', () => {
+        document.querySelectorAll('[name="categoria_id"]').forEach(input => input.name = "categoria_id[]");
+        document.querySelectorAll('[name="categoria_cantidad"]').forEach(input => input.name = "categoria_cantidad[]");
+    });
 </script>

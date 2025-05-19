@@ -106,8 +106,10 @@ exports.createGroup = (req, res) => {
     res.render('createGroup', { layout: false });
 };
 
+
 exports.createGroupPost = (req, res) => {
-    const { nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok } = req.body;
+    const { nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, 
+email, facebook, tiktok } = req.body;
 
     db.query('INSERT INTO grupos (nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok) VALUES (?, ?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?)',
         [nombre_empresa, slogan, rubro, mision, vision, descripcion, ubicacion, horario, telefono, email, facebook, tiktok],
@@ -264,44 +266,6 @@ exports.updateGroup = (req, res) => {
     });
 };
 
-// exports.showGroup = (req, res) => {
-//     const grupo_id = req.params.id;
-
-//     if (!grupo_id) {
-//         return res.render('mensaje', { layout: false, mensaje: 'Error al obtener grupo.', tipo: 'error' });
-//     }
-
-//     const queryGrupo = 'SELECT * FROM grupos WHERE id = ?';
-//     const queryMedia = 'SELECT * FROM media WHERE grupo_id = ?';
-
-//     db.query(queryGrupo, [grupo_id], (err, grupoResults) => {
-//         if (err) {
-//             console.error('Error al obtener el grupo:', err);
-//             return res.render('mensaje', { layout: false, mensaje: 'Error al obtener informacion del grupo.', tipo: 'error' });
-//         }
-
-//         if (grupoResults.length === 0) {
-//             return res.render('mensaje', { layout: false, mensaje: 'Grupo no encontrado.', tipo: 'error' });
-//         }
-
-//         const grupo = grupoResults[0];
-
-//         // Consultar archivos multimedia
-//         db.query(queryMedia, [grupo_id], (err, mediaResults) => {
-//             if (err) {
-//                 console.error('Error al obtener archivos multimedia:', err);
-//                 return res.render('mensaje', { layout: false, mensaje: 'Error al obteenr archivos multimedia.', tipo: 'error' });
-//             }
-
-//             res.render('grupo', {
-//                 layout: false,
-//                 grupo,
-//                 media: mediaResults
-//             });
-//         });
-//     });
-// };
-
 exports.showGroup = (req, res) => {
     const grupo_id = req.params.id;
 
@@ -349,6 +313,7 @@ exports.showGroup = (req, res) => {
         });
     });
 };
+
 
 exports.downloadQRCode = (req, res) => {
     if (!req.session.encargado || !req.session.encargado.grupo_id) {
@@ -412,7 +377,7 @@ exports.registerPost = async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const tempId = uuidv4(); // Identificador único para el registro temporal
+        const tempId = uuidv4();
 
         // Guardar los datos temporalmente
         await db.query(
@@ -495,6 +460,7 @@ exports.paymentFailure = (req, res) => {
 exports.paymentPending = (req, res) => {
   res.render('payment-pending');
 };
+
 
 // Cerrar sesión
 exports.logout = (req, res) => {
@@ -812,6 +778,7 @@ exports.casos = (req, res) => {
         console.error('Error: No se encontró grupo_id en la sesión');
         return res.status(403).send('Acceso denegado');
     }
+
     const playSuccessSound = req.session.playSuccessSound;
     if (req.session) delete req.session.playSuccessSound;
 
@@ -891,7 +858,7 @@ exports.casoIndividual = (req, res) => {
             casos.fecha_entrega, 
             casos.fecha_devolucion,
             casos.precio,
-            casos.pago_anticipo,
+	    casos.pago_anticipo,
             casos.pago_extra,
             casos.nombre_pago_extra,
             casos.comentarios_adicionales
@@ -927,6 +894,7 @@ exports.casoIndividual = (req, res) => {
     });
 };
 
+
 exports.crearCasoPost = (req, res) => {
     const { cliente_id, abogado_id, descripcion, estado, categoria_id, categoria_cantidad, fecha_entrega, fecha_devolucion, pago_anticipo, pago_extra, nombre_pago_extra, comentarios_adicionales } = req.body;
 
@@ -936,8 +904,8 @@ exports.crearCasoPost = (req, res) => {
     }
 
     const grupo_id = req.session.encargado.grupo_id;
-    const categoriasArray = Array.isArray(categoria_id) ? categoria_id : [categoria_id];
-    const cantidadesArray = Array.isArray(categoria_cantidad) ? categoria_cantidad : [categoria_cantidad];
+    const categoriasArray = Array.isArray(categoria_id) ? categoria_id.map(id => parseInt(id)) : [parseInt(categoria_id)];
+    const cantidadesArray = Array.isArray(categoria_cantidad) ? categoria_cantidad.map(c => parseFloat(c)) : [parseFloat(categoria_cantidad)];
 
     db.query('SELECT id, nombre, precio, stock FROM categorias WHERE id IN (?)', [categoriasArray], (err, resultados) => {
         if (err) {
@@ -947,12 +915,18 @@ exports.crearCasoPost = (req, res) => {
         }
 
         // Verificar si hay suficiente stock
+        const categoriaMap = new Map();
+        resultados.forEach(c => categoriaMap.set(c.id, c));
+
         for (let i = 0; i < categoriasArray.length; i++) {
-            const categoria = resultados.find(c => c.id == categoriasArray[i]);
-            if (!categoria || categoria.stock < cantidadesArray[i]) {
+            const categoria = categoriaMap.get(categoriasArray[i]);
+            const cantidad = cantidadesArray[i];
+
+            if (!categoria || categoria.stock < cantidad) {
                 return res.render('mensaje', { layout: false, mensaje: `Stock insuficiente para la categoría "${categoria ? categoria.nombre : 'desconocida'}"`, tipo: 'warning' });
             }
         }
+
 
         let precioTotal = 0;
         resultados.forEach((categoria, index) => {
@@ -1200,7 +1174,6 @@ exports.editarCaso = (req, res) => {
     });
 };
 
-
 exports.editarCasoPost = (req, res) => {
     const { id } = req.params;
     const {
@@ -1213,57 +1186,71 @@ exports.editarCasoPost = (req, res) => {
     const categoriasArray = Array.isArray(categoria_id) ? categoria_id : [categoria_id];
     const cantidadesArray = Array.isArray(categoria_cantidad) ? categoria_cantidad : [categoria_cantidad];
 
-    // Convertir a números seguros
     const precioBase = parseFloat(precio) || 0;
     const pagoExtraConv = parseFloat(pago_extra?.trim() || 0);
     const pagoAnticipoConv = parseFloat(pago_anticipo?.trim() || 0);
     const nombrePagoExtraConv = nombre_pago_extra?.trim() || 'No aplica';
     const comentariosAdicionalesConv = comentarios_adicionales?.trim() || 'Sin comentarios';
-
-    // Calcular total
     const precioFinal = (precioBase + pagoExtraConv - pagoAnticipoConv).toFixed(2);
 
-    db.query(
-        `UPDATE casos 
-         SET cliente_id = ?, abogado_id = ?, descripcion = ?, estado = ?, precio = ?, 
-             fecha_entrega = ?, fecha_devolucion = ?, 
-             pago_anticipo = ?, pago_extra = ?, nombre_pago_extra = ?, comentarios_adicionales = ?
-         WHERE id = ?`,
-        [
-            cliente_id, abogado_id, descripcion, estado, precioFinal,
-            fecha_entrega, fecha_devolucion,
-            pagoAnticipoConv, pagoExtraConv, nombrePagoExtraConv, comentariosAdicionalesConv,
-            id
-        ],
-        (err) => {
-            if (err) throw err;
+    // Paso 1: obtener las cantidades actuales
+    db.query('SELECT categoria_id, cantidad FROM caso_categorias WHERE caso_id = ?', [id], (err, anteriores) => {
+        if (err) throw err;
 
-            db.query('DELETE FROM caso_categorias WHERE caso_id = ?', [id], (err) => {
-                if (err) throw err;
-
-                const categoriaQueries = categoriasArray.map((categoriaId, index) => {
-                    const cantidad = parseFloat(cantidadesArray[index]);
-                    return new Promise((resolve, reject) => {
-                        db.query('INSERT INTO caso_categorias (caso_id, categoria_id, cantidad) VALUES (?, ?, ?)', [id, categoriaId, cantidad], (err) => {
-                            if (err) {
-                                reject(err);
-                            } else {
-                                resolve();
-                            }
-                        });
-                    });
+        // Paso 2: devolver al stock las cantidades antiguas
+        const devolverStock = anteriores.map(row => {
+            return new Promise((resolve, reject) => {
+                db.query('UPDATE categorias SET stock = stock + ? WHERE id = ?', [row.cantidad, row.categoria_id], (err) => {
+                    if (err) reject(err);
+                    else resolve();
                 });
-
-                Promise.all(categoriaQueries)
-                    .then(() => {
-                        res.redirect('/casos');
-                    })
-                    .catch(err => {
-                        throw err;
-                    });
             });
         });
+
+        Promise.all(devolverStock)
+            .then(() => {
+                // Paso 3: actualizar el caso
+                db.query(
+                    `UPDATE casos SET cliente_id = ?, abogado_id = ?, descripcion = ?, estado = ?, precio = ?, 
+                    fecha_entrega = ?, fecha_devolucion = ?, 
+                    pago_anticipo = ?, pago_extra = ?, nombre_pago_extra = ?, comentarios_adicionales = ?
+                    WHERE id = ?`,
+                    [cliente_id, abogado_id, descripcion, estado, precioFinal,
+                        fecha_entrega, fecha_devolucion, pagoAnticipoConv, pagoExtraConv,
+                        nombrePagoExtraConv, comentariosAdicionalesConv, id],
+                    (err) => {
+                        if (err) throw err;
+
+                        // Paso 4: eliminar categorías anteriores
+                        db.query('DELETE FROM caso_categorias WHERE caso_id = ?', [id], (err) => {
+                            if (err) throw err;
+
+                            // Paso 5: insertar nuevas y restar stock
+                            const categoriaQueries = categoriasArray.map((categoriaId, index) => {
+                                const cantidad = parseFloat(cantidadesArray[index]);
+                                return new Promise((resolve, reject) => {
+                                    db.query('INSERT INTO caso_categorias (caso_id, categoria_id, cantidad) VALUES (?, ?, ?)',
+                                        [id, categoriaId, cantidad], (err) => {
+                                            if (err) return reject(err);
+
+                                            db.query('UPDATE categorias SET stock = stock - ? WHERE id = ?', [cantidad, categoriaId], (err) => {
+                                                if (err) reject(err);
+                                                else resolve();
+                                            });
+                                        });
+                                });
+                            });
+
+                            Promise.all(categoriaQueries)
+                                .then(() => res.redirect('/casos'))
+                                .catch(err => { throw err; });
+                        });
+                    });
+            })
+            .catch(err => { throw err; });
+    });
 };
+
 
 
 
@@ -1289,8 +1276,8 @@ exports.generarPDF = (req, res) => {
             casos.id, 
             clientes.nombre AS cliente_nombre,
             clientes.apellido AS cliente_apellido, 
-            clientes.rfc AS cliente_rfc, 
             clientes.telefono AS cliente_telefono,
+	    clientes.rfc AS cliente_rfc,
             encargados.nombre AS encargado_nombre, 
             encargados.apellido AS encargado_apellido,
             GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
@@ -1303,7 +1290,7 @@ exports.generarPDF = (req, res) => {
             casos.fecha_entrega, 
             casos.fecha_devolucion,
             casos.grupo_id,
-            casos.pago_anticipo,
+	    casos.pago_anticipo,
             casos.pago_extra,
             casos.nombre_pago_extra,
             casos.comentarios_adicionales
@@ -1332,7 +1319,7 @@ exports.generarPDF = (req, res) => {
                     foto_perfil, 
                     ubicacion,
                     terminos,
-                    rfc
+		    rfc
                 FROM grupos
                 WHERE id = ?`,
                 [caso.grupo_id], (err, resultsGrupo) => {
@@ -1759,23 +1746,21 @@ exports.eliminarRecordatorio = (req, res) => {
 };
 
 exports.enviar = (req, res) => {
-  const { nombre, correo, mensaje } = req.body;
-
-  if (!nombre || !correo || !mensaje) {
-    req.flash('error', 'Todos los campos son obligatorios');
-    return res.redirect('/'); // o la ruta correspondiente a tu formulario
-  }
-
-  const query = "INSERT INTO mensajes (nombre, correo, mensaje) VALUES (?, ?, ?)";
-  db.query(query, [nombre, correo, mensaje], (err, result) => {
-    if (err) {
-      console.error("Error insertando datos:", err);
-      req.flash('error', 'Error al guardar el mensaje');
-      return res.redirect('/');
+    const { nombre, correo, mensaje } = req.body;
+    if (!nombre || !correo || !mensaje) {
+        req.flash('error', 'Todos los campos son obligatorios');
+        return res.redirect('/');
     }
-    req.flash('success', 'Mensaje enviado correctamente');
-    res.redirect('/');
-  });
+    const query = "INSERT INTO mensajes (nombre, correo, mensaje) VALUES (?, ?, ?)";
+    db.query(query, [nombre, correo, mensaje], (err, result) => {
+      if (err) {
+        req.flash('error', 'Error al enviar el mensaje');
+        return res.redirect('/');
+      } else {
+        req.flash('success', 'Mensaje enviado correctamente');
+        res.redirect('/');
+      }
+    });
 };
 
 
@@ -1851,7 +1836,7 @@ exports.resetPassword = async (req, res) => {
         db.query('UPDATE encargados SET password = ?, reset_token = NULL, reset_expires = NULL WHERE email = ?', 
             [hashedPassword, email], (err) => {
                 if (err) return res.send('Error al actualizar la contraseña.');
-                return res.render('sesiones', { layout: false, mensaje: 'Contraseña restablecida con éxito.', tipo: 'success' });
+                return res.render('sesiones', { layout: false, mensaje: 'Contraseña restablecida con exito.', tipo: 'success' });
                 // res.send('Contraseña restablecida con éxito.');
             }
         );
@@ -2122,7 +2107,8 @@ exports.exportarExcel = (req, res) => {
 
             // Agregar Fechas de consulta
             sheetResumenCategorias.addRow({});
-            sheetResumenCategorias.addRow({ categoria_nombre: `Fecha Inicio: ${fechaInicio || 'N/A'}` });
+            sheetResumenCategorias.addRow({ categoria_nombre: `Fecha Inicio: ${fechaInicio || 'N/A'}` 
+});
             sheetResumenCategorias.addRow({ categoria_nombre: `Fecha Fin: ${fechaFin || 'N/A'}` });
 
             // Poner en negritas TOTAL y Fechas
@@ -2187,8 +2173,6 @@ exports.exportarExcel = (req, res) => {
         });
     });
 };
-
-// contacto
 
 // Crear un nuevo contacto
 exports.crearContacto = (req, res) => {
@@ -2581,3 +2565,4 @@ exports.verPublicacionIndividual = (req, res) => {
         });
     });
 };
+
