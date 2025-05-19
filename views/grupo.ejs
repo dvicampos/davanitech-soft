@@ -186,11 +186,22 @@ grupo">
         <% } %>
     </div>
 </section>
-<% if (messages.success && messages.success.length > 0) { %>
-    <div class="alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3" role="alert" style="z-index: 1050;">
-        <%= messages.success[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-    </div>
+<% if (success && success.length > 0) { %>
+    <% success.forEach(function(msg) { %>
+        <div class="alert alert-success alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 1050; min-width: 250px;" role="alert">
+            <%= msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    <% }) %>
+<% } %>
+
+<% if (error && error.length > 0) { %>
+    <% error.forEach(function(msg) { %>
+        <div class="alert alert-danger alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 1050; min-width: 250px;" role="alert">
+            <%= msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    <% }) %>
 <% } %>
 <section class="py-5">
     <div class="container">
@@ -253,14 +264,14 @@ grupo">
                     </div>
                 <% }) %>
             <% } else { %>
-                <p class="text-muted text-center">Este grupo aún no ha publicado ningún blog.</p>
+                <p class="text-muted text-center"><%= grupo.nombre_empresa %> aún no ha publicado ningún blog.</p>
             <% } %>
         </div>
     </div>
 </section>
 
 <footer>
-    <p>© <%= new Date().getFullYear() %> <%= grupo.nombre_empresa %>. Todos los derechos reservados.</p>
+    <p>© <%= new Date().getFullYear() %> <%= grupo.nombre_empresa %>. Impulsado por <a target="_blank" href="https://davanitechnology.com/">Davani Technology</a> - Todos los derechos reservados.</p>
     <p><strong>Términos y Condiciones:</strong> <%= grupo.terminos %></p>
 </footer>
 

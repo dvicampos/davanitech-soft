@@ -93,8 +93,10 @@ exports.loginPost = (req, res) => {
                 especialidad: encargado.especialidad,
                 grupo_id: encargado.grupo_id,
             };
+            req.flash('success', 'Inicio de sesión exitoso.');
             res.redirect('/dashboard');
         } else {
+            req.flash('error', 'Correo o contraseña incorrectos. Inténtalo nuevamente.');
             res.redirect('/login');
         }
     });
@@ -1754,19 +1756,23 @@ exports.eliminarRecordatorio = (req, res) => {
 };
 
 exports.enviar = (req, res) => {
-    const { nombre, correo, mensaje } = req.body;
-    if (!nombre || !correo || !mensaje) {
-        return res.status(400).json({ error: "Todos los campos son obligatorios" });
+  const { nombre, correo, mensaje } = req.body;
+
+  if (!nombre || !correo || !mensaje) {
+    req.flash('error', 'Todos los campos son obligatorios');
+    return res.redirect('/'); // o la ruta correspondiente a tu formulario
+  }
+
+  const query = "INSERT INTO mensajes (nombre, correo, mensaje) VALUES (?, ?, ?)";
+  db.query(query, [nombre, correo, mensaje], (err, result) => {
+    if (err) {
+      console.error("Error insertando datos:", err);
+      req.flash('error', 'Error al guardar el mensaje');
+      return res.redirect('/');
     }
-    const query = "INSERT INTO mensajes (nombre, correo, mensaje) VALUES (?, ?, ?)";
-    db.query(query, [nombre, correo, mensaje], (err, result) => {
-      if (err) {
-        console.error("Error insertando datos:", err);
-        res.status(500).json({ error: "Error al guardar el mensaje" });
-      } else {
-        res.json({ mensaje: "Mensaje enviado correctamente" });
-      }
-    });
+    req.flash('success', 'Mensaje enviado correctamente');
+    res.redirect('/');
+  });
 };
 
 

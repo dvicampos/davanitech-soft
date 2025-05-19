@@ -280,15 +280,63 @@ header .textos h3 {
 
 /* ----- ----- FOOTER ----- ----- */
 footer {
-	background: #000;
+    background-color: #282828; /* Color oscuro para el fondo */
+    color: #fff; /* Color de texto blanco */
+    padding: 30px 0; /* Espaciado superior e inferior */
+    text-align: center;
+    font-size: 14px;
 }
 
-footer .copyright {
-	text-align: center;
-	padding: 15px 0;
-	color: #fff;
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto; /* Centra el contenido */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Permite que se ajusten los elementos si es necesario */
 }
 
+.copyright p {
+    margin: 0;
+}
+
+.social-media {
+    margin-top: 10px;
+}
+
+.social-icon {
+    margin: 0 15px;
+    display: inline-block;
+    font-size: 25px;
+    color: #fff;
+    transition: all 0.3s ease;
+    text-decoration: none; /* Elimina el subrayado */
+}
+
+.social-icon:hover {
+    color: #1DA1F2; /* Color cuando se pasa el mouse (azul para Facebook y TikTok) */
+    transform: scale(1.2); /* Efecto de aumento al pasar el mouse */
+}
+
+.social-icon:active {
+    transform: scale(1); /* Elimina el efecto de escala cuando el icono es presionado */
+}
+
+.social-icon i {
+    display: block; /* Asegura que el icono ocupe toda el área del enlace */
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .social-media {
+        margin-top: 20px;
+    }
+}
 /* --------------------NOTA----------------------- */
 .nota {
 	margin: 30px;
