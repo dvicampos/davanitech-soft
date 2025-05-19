@@ -812,6 +812,8 @@ exports.casos = (req, res) => {
         console.error('Error: No se encontró grupo_id en la sesión');
         return res.status(403).send('Acceso denegado');
     }
+    const playSuccessSound = req.session.playSuccessSound;
+    if (req.session) delete req.session.playSuccessSound;
 
     const grupo_id = req.session.encargado.grupo_id;
     const rol = req.session.encargado.especialidad;
@@ -864,7 +866,7 @@ exports.casos = (req, res) => {
 
             const grupo = grupoResults[0]; 
 
-            res.render('casos', { casos: results, grupo, rol: rol });
+            res.render('casos', { casos: results, grupo, rol: rol, playSuccessSound });
         });
     });
 };
@@ -1010,6 +1012,7 @@ exports.crearCasoPost = (req, res) => {
                 Promise.all(categoriaQueries)
                     .then(() => {
                         console.log('Caso y stock actualizados correctamente.');
+                        req.session.playSuccessSound = true;
                         res.redirect('/casos');
                     })
                     .catch(err => {

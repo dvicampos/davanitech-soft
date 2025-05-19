@@ -83,5 +83,12 @@
         </tbody>
     </table>
 </div>
-
+<% if (playSuccessSound) { %>
+<script>
+    const successAudio = new Audio('/sonidos/exito.mp3');
+    successAudio.play().catch(() => {
+        document.addEventListener('click', () => successAudio.play(), { once: true });
+    });
+</script>
+<% } %>
 <a href="/dashboard" class="btn btn-outline-dark mt-3">🔙 Regresar</a>
