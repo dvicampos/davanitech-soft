@@ -773,67 +773,133 @@ exports.eliminarEncargado = (req, res) => {
 
 
 // CASOS 
+// exports.casos = (req, res) => {
+//     if (!req.session.encargado || !req.session.encargado.grupo_id) {
+//         console.error('Error: No se encontró grupo_id en la sesión');
+//         return res.status(403).send('Acceso denegado');
+//     }
+
+//     const playSuccessSound = req.session.playSuccessSound;
+//     if (req.session) delete req.session.playSuccessSound;
+
+//     const grupo_id = req.session.encargado.grupo_id;
+//     const rol = req.session.encargado.especialidad;
+
+//     const query = `
+//         SELECT 
+//             casos.id AS caso_id, 
+//             clientes.nombre AS cliente_nombre, 
+//             encargados.nombre AS abogado_nombre, 
+//             grupos.nombre_empresa AS grupo_nombre, 
+//             GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
+//             casos.descripcion, 
+//             casos.estado,
+//             casos.precio,
+//             casos.fecha_entrega,
+//             casos.fecha_devolucion
+//         FROM 
+//             casos 
+//         JOIN 
+//             clientes ON casos.cliente_id = clientes.id 
+//         JOIN 
+//             encargados ON casos.abogado_id = encargados.id 
+//         LEFT JOIN 
+//             grupos ON casos.grupo_id = grupos.id 
+//         JOIN 
+//             caso_categorias ON casos.id = caso_categorias.caso_id 
+//         JOIN 
+//             categorias ON caso_categorias.categoria_id = categorias.id
+//         WHERE 
+//             casos.grupo_id = ?
+//         GROUP BY 
+//             casos.id, clientes.nombre, encargados.nombre, grupos.nombre_empresa, casos.descripcion, casos.estado, casos.precio, casos.fecha_entrega, casos.fecha_devolucion
+//     `;
+
+//     db.query(query, [grupo_id], (err, results) => {
+//         if (err) {
+//             console.error('Error al obtener los casos:', err);
+//             return res.status(500).send('Error al obtener los casos.');
+//         }
+
+//         db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+//             if (err) {
+//                 console.error('Error al obtener el grupo:', err);
+//                 return res.status(500).send('Error al obtener el grupo.');
+//             }
+
+//             if (grupoResults.length === 0) {
+//                 return res.status(404).send('Grupo no encontrado.');
+//             }
+
+//             const grupo = grupoResults[0]; 
+
+//             res.render('casos', { casos: results, grupo, rol: rol, playSuccessSound });
+//         });
+//     });
+// };
 exports.casos = (req, res) => {
     if (!req.session.encargado || !req.session.encargado.grupo_id) {
-        console.error('Error: No se encontró grupo_id en la sesión');
         return res.status(403).send('Acceso denegado');
     }
 
+    const grupo_id = req.session.encargado.grupo_id;
+    const rol = req.session.encargado.especialidad;
     const playSuccessSound = req.session.playSuccessSound;
     if (req.session) delete req.session.playSuccessSound;
 
-    const grupo_id = req.session.encargado.grupo_id;
-    const rol = req.session.encargado.especialidad;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
 
-    const query = `
-        SELECT 
-            casos.id AS caso_id, 
-            clientes.nombre AS cliente_nombre, 
-            encargados.nombre AS abogado_nombre, 
-            grupos.nombre_empresa AS grupo_nombre, 
-            GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
-            casos.descripcion, 
-            casos.estado,
-            casos.precio,
-            casos.fecha_entrega,
-            casos.fecha_devolucion
-        FROM 
-            casos 
-        JOIN 
-            clientes ON casos.cliente_id = clientes.id 
-        JOIN 
-            encargados ON casos.abogado_id = encargados.id 
-        LEFT JOIN 
-            grupos ON casos.grupo_id = grupos.id 
-        JOIN 
-            caso_categorias ON casos.id = caso_categorias.caso_id 
-        JOIN 
-            categorias ON caso_categorias.categoria_id = categorias.id
-        WHERE 
-            casos.grupo_id = ?
-        GROUP BY 
-            casos.id, clientes.nombre, encargados.nombre, grupos.nombre_empresa, casos.descripcion, casos.estado, casos.precio, casos.fecha_entrega, casos.fecha_devolucion
-    `;
+    const countQuery = `SELECT COUNT(DISTINCT casos.id) AS total FROM casos WHERE grupo_id = ?`;
 
-    db.query(query, [grupo_id], (err, results) => {
-        if (err) {
-            console.error('Error al obtener los casos:', err);
-            return res.status(500).send('Error al obtener los casos.');
-        }
+    db.query(countQuery, [grupo_id], (err, countResults) => {
+        if (err) return res.status(500).send('Error al contar los casos.');
 
-        db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
-            if (err) {
-                console.error('Error al obtener el grupo:', err);
-                return res.status(500).send('Error al obtener el grupo.');
-            }
+        const totalCasos = countResults[0].total;
+        const totalPages = Math.ceil(totalCasos / limit);
 
-            if (grupoResults.length === 0) {
-                return res.status(404).send('Grupo no encontrado.');
-            }
+        const dataQuery = `
+            SELECT 
+                casos.id AS caso_id, 
+                clientes.nombre AS cliente_nombre, 
+                encargados.nombre AS abogado_nombre, 
+                grupos.nombre_empresa AS grupo_nombre, 
+                GROUP_CONCAT(categorias.nombre SEPARATOR ', ') AS categorias_nombres, 
+                casos.descripcion, 
+                casos.estado,
+                casos.precio,
+                casos.fecha_entrega,
+                casos.fecha_devolucion
+            FROM 
+                casos 
+            JOIN clientes ON casos.cliente_id = clientes.id 
+            JOIN encargados ON casos.abogado_id = encargados.id 
+            LEFT JOIN grupos ON casos.grupo_id = grupos.id 
+            JOIN caso_categorias ON casos.id = caso_categorias.caso_id 
+            JOIN categorias ON caso_categorias.categoria_id = categorias.id
+            WHERE casos.grupo_id = ?
+            GROUP BY casos.id
+            ORDER BY casos.fecha_entrega DESC
+            LIMIT ? OFFSET ?
+        `;
 
-            const grupo = grupoResults[0]; 
+        db.query(dataQuery, [grupo_id, limit, offset], (err, results) => {
+            if (err) return res.status(500).send('Error al obtener los casos.');
 
-            res.render('casos', { casos: results, grupo, rol: rol, playSuccessSound });
+            db.query('SELECT * FROM grupos WHERE id = ?', [grupo_id], (err, grupoResults) => {
+                if (err || grupoResults.length === 0) return res.status(500).send('Error al obtener el grupo.');
+
+                const grupo = grupoResults[0];
+                res.render('casos', {
+                    casos: results,
+                    grupo,
+                    rol,
+                    playSuccessSound,
+                    currentPage: page,
+                    totalPages
+                });
+            });
         });
     });
 };
