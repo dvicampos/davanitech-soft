@@ -36,6 +36,10 @@ app.use((req, res, next) => {
 });
 // Rutas
 app.use('/', routes);
+const sitemapRoutes = require('./routes/sitemap');
+const robotsRoutes = require('./routes/robots');
+app.use(sitemapRoutes);
+app.use(robotsRoutes);
 
 app.use('/ads.txt', express.static(path.join(__dirname, 'ads.txt')));
 app.listen(PORT, '0.0.0.0', () => {

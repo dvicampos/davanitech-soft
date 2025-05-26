@@ -5,6 +5,7 @@ const isAuthenticated = require('../middleware/auth');
 
 // Rutas para la página principal
 router.get('/', controller.index);
+router.get('/services', controller.servicios);
 router.post('/enviar', controller.enviar);
 router.get('/dashboard', isAuthenticated, controller.dashboard);
 

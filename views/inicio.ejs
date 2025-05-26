@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-	<meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DavaniTechnology - ERP para Alquiladoras, Gestión de Ventas y Página Web Automática</title>
     <meta name="description" content="DavaniTechnology es un software ERP en la nube para alquiladoras y empresas de renta. Gestiona ventas, productos, clientes, usuarios, recordatorios, tickets, y genera una página web 100% personalizable automáticamente.">
     <meta name="keywords" content="erp para alquiladoras, software de alquiler, crm, sistema de ventas, gestión de clientes, gestión de productos, página web automática, tickets con QR, DavaniTechnology, ERP online, software para empresas de renta">
@@ -31,264 +31,302 @@
     <link rel="stylesheet" href="css/inicio.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 </head>
+
 <body>
-    <% if (success && success.length > 0) { %>
-      <% success.forEach(function(msg) { %>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-          <%= msg %>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
-      <% }) %>
-    <% } %>
-
-    <% if (error && error.length > 0) { %>
-      <% error.forEach(function(msg) { %>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <%= msg %>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
-      <% }) %>
-    <% } %>
-	<header>
-		<div class="contenedor">
-			<nav class="planes">
-				<a href="#" id="btn-acerca-de">Acerca de</a>
-				<a href="#" id="btn-planes">Planes</a>
-				<a href="#" id="btn-galeria">Valores</a>
-				<a href="#" id="btn-contacto">Contacto</a>
-				<a href="/login">Iniciar sesion</a>
-			</nav>
-
-			<div class="textos">
-				<h1 class="nombre"><span>Davani</span> Technology</h1>
-				<h3>Ingenieros de software</h3>
-			</div>
-		</div>
-	</header>
-
-	<section class="main">
-		<section class="acerca-de" id="acerca-de">
-			<div class="contenedor">
-				<div class="foto">
-					<img src="img/logo.png" alt="">
-				</div>
-				<article>
-					<h3>Acerca de</h3>
-					<p>Somos unos jovenes desarrolladores y entusiastas que buscamos poder apoyar y crear todo lo real que nuestros clientes puedan imaginar.</p>
-				
-					<p>Estamos comprometidos a cumplir con las expectativas de nuestro cliente y que puedan hacerce mas conocidos por medio de su sitio web.</p>
-				</article>
-			</div>
-		</section>
-
-		<section class="planes">
-    <div class="contenedor">
-        <h3 class="titulo" id="planes">Planes</h3>
-        <div class="contenedor-planes">
-            <div class="contenedor-planes2">
-
-                <article>
-                    <p class="categoria">Pago único</p>
-                    <div class="plan">
-                        <p class="nombre">Acceso vitalicio a Davani Rentix</p>
-                        <p class="precio">$1000</p>
-                        <br><br>
-                        <ul class="beneficios">
-                            <li>Acceso completo a la plataforma de negocio para siempre.</li>
-                            <li>Un solo pago, sin mensualidades ni renovaciones.</li>
-                            <li>Ahorro garantizado: paga una vez y disfruta de todos los beneficios de por vida.</li>
-                            <li>Ideal para quienes buscan estabilidad y compromiso a largo plazo.</li>
-                        </ul>
-                    </div>
-                </article>
-                
+    <% if (success && success.length> 0) { %>
+        <% success.forEach(function(msg) { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <%= msg %>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
             </div>
+            <% }) %>
+                <% } %>
 
-            <div class="nota">
-                <h2 class="titulo-nota">Beneficios de la Plataforma</h2>
-                <ul class="beneficios">
-                    <li><strong>Gestión de Capital Humano:</strong> Gestión de información de 
-trabajadores o colegas con permisos específicos.</li>
-                    <li><strong>Gestión de Clientes:</strong> Una mejor gestión de clientes con sus 
-datos generales para poder contactarlos y tener un mejor historial.</li>
-                    <li><strong>Gestión de Categorías:</strong> Podrá gestionar las categorías o 
-servicios que ofrece.</li>
-                    <li><strong>Gestión de Servicios:</strong> Puede gestionar sus servicios, 
-seleccionar cliente, vendedor, ubicación y fecha de entrega, además de ver el total de su renta.</li>
-                    <li><strong>Servicios:</strong> Creación y gestión de servicios, además de generar 
-tickets personalizados y detallados con un código QR único para cada servicio de venta o renta.</li>
-                    <li><strong>Datos Empresa:</strong> Gestión de datos importantes de la empresa, 
-como el logo, descripción, rubro, ubicación, horario, teléfono, correo electrónico y redes sociales. 
-También, creación de una página web única para la empresa con opción de compartirla mediante un código 
-QR.</li>
-                    <li><strong>Notas:</strong> Acceso a un apartado de bloc de notas especializado 
-para escribir ideas o lo que desee.</li>
-                    <li><strong>Recordatorios:</strong> Creación de recordatorios con fecha de inicio 
-y fin, que se mostrarán si no se ha logrado la meta en el tiempo establecido.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</section>
+                    <% if (error && error.length> 0) { %>
+                        <% error.forEach(function(msg) { %>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <%= msg %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Cerrar"></button>
+                            </div>
+                            <% }) %>
+                                <% } %>
+                                    <header>
+                                        <div class="contenedor">
+                                            <nav class="planes">
+                                                <a href="#" id="btn-acerca-de">Acerca de</a>
+                                                <a href="#" id="btn-planes">Planes</a>
+                                                <a href="#" id="btn-galeria">Valores</a>
+                                                <a href="#" id="btn-contacto">Contacto</a>
+                                                <a href="/services" id="btn-servicios">Servicios</a>
+                                                <a href="/login">Iniciar sesion</a>
+                                            </nav>
 
+                                            <div class="textos">
+                                                <h1 class="nombre"><span>Davani</span> Technology</h1>
+                                                <h3>Ingenieros de software</h3>
+                                            </div>
+                                        </div>
+                                    </header>
 
-		<div class="informacion">
-            <h3 class="titulo" id="planes">Informacion</h3>
-            <div class="section">
-                <div class="text">
-                    <h2>Gestion de capital humano</h2>
-                    <p>Gestion de informacion de trabajadores o colegas con permisos especificos.</p>
-                </div>
-                <div class="image">
-                    <img src="/img/encargado.png" alt="Primera imagen">
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="text">
-                    <h2>Gestion de clientes</h2>
-                    <p>Una mejor gestion de clientes con su datos generales para poder contactarlos y tener un mejor historial</p>
-                </div>
-                <div class="image">
-                    <img src="/img/clientes.png" alt="Segunda imagen">
-                </div>
-            </div>
-            
-            <div class="section">
-                <div class="text">
-                    <h2>Gestion de categorías</h2>
-                    <p>Podra gestionar las categorias o servicios que ofrece.</p>
-                </div>
-                <div class="image">
-                    <img src="/img/categorias.png" alt="Tercera imagen">
-                </div>
-            </div>
-            <div class="section">
-                <div class="text">
-                    <h2>Gestion de servicios</h2>
-                    <p>En este apartado puede gestionar sus servicios asi como seleccionar el cliente, el vendedor ubicacion y fecha de entrega, con un apartado donde le mostrara el total de su renta.</p>
-                </div>
-                <div class="image">
-                    <img src="/img/servicios.png" alt="Tercera imagen">
-                </div>
-            </div>
-            <div class="section">
-                <div class="text">
-                    <h2>Servicios</h2>
-                    <p>En servicios no solo podra crear y gestionar sus servicios tambien podra crear un ticket listo para enviar o imprimir personalizado y detallado para su cliente con un codigo QR creado unicamente para cada servicio de venta o renta, asi como una seccion dedicada a ver la informacion en una pagian especial para su cliente y el pueda consultar el estado de su servicio, asi como su informacion mas importante.</p>
-                </div>
-                <div class="image">
-                    <img src="/img/ticket.png" alt="Tercera imagen">
-                </div>
-            </div>
-            <div class="section">
-                <div class="text">
-                    <h2>Datos empresa</h2>
-                    <p>Podra gestionar datos de su empresa que sean muy importantes como el logo, descrippcion, rubro de su empresa, ubicacion, horario, telefono, email y redes sociales.</p>
-                    <strong>Todo esto para darle acceso a la creacion de una pagina web de su empresa unica y asi poder compratirla para poder publicitarse en sitios web, tambien le damos una opcion de codigo QR en formato de imagen y asi poder enviarla a sus conocidos o compartirla</strong>
-                </div>
-                <div class="image">
-                    <img src="/img/empresa.png" alt="Tercera imagen">
-                </div>
-            </div>
-            <div class="section">
-                <div class="text">
-                    <h2>Notas</h2>
-                    <p>Puede tener acceso a un apartado de bloc de notas especializado para poder escribir ideas o lo que usted guste.</p>
-                </div>
-                <div class="image">
-                    <img src="/img/notas.png" alt="Tercera imagen">
-                </div>
-            </div>
-            <div class="section">
-                <div class="text">
-                    <h2>Recordatorios</h2>
-                    <p>En esta seccion podra crear recordatorios con fecha de inicio y fin los cuales dependiendo el tiempo que sea de llegar a la meta y no se hayan logrado las mostrara en su inicio.</p>
-                </div>
-                <div class="image">
-                    <img src="/img/recordatorio.png" alt="Tercera imagen">
-                </div>
-            </div>
-        </div>
+                                    <section class="main">
+                                        <section class="acerca-de" id="acerca-de">
+                                            <div class="contenedor">
+                                                <div class="foto">
+                                                    <img src="img/logo.png" alt="">
+                                                </div>
+                                                <article>
+                                                    <h3>Acerca de</h3>
+                                                    <p>Somos unos jovenes desarrolladores y entusiastas que buscamos
+                                                        poder apoyar y crear todo lo real que nuestros clientes puedan
+                                                        imaginar.</p>
 
-		<section class="galeria" id="galeria">
-            <h3 class="titulo" id="planes">Valores</h3>
-			<div class="foto">
-				<p class="texto">PUNTUALIDAD</p>
-				<img src="img/1.jpg" alt="">
-			</div>
-			<div class="foto">
-				<p class="texto">RESPETO</p>
-				<img src="img/2.jpg" alt="">
-			</div>
-			<div class="foto">
-				<p class="texto">COLABORACION</p>
-				<img src="img/3.jpg" alt="">
-			</div>
-			<div class="foto">
-				<p class="texto">ORGANIZACION</p>
-				<img src="img/4.jpg" alt="">
-			</div>
-			<div class="foto">
-				<p class="texto">AGILIDAD</p>
-				<img src="img/5.jpg" alt="">
-			</div>
-			<div class="foto">
-				<p class="texto">INNOVACION</p>
-				<img src="img/6.jpg" alt="">
-			</div>
-			<div class="foto">
-				<p class="texto">ORIENTACION</p>
-				<img src="img/7.jpg" alt="">
-			</div>
-			<div class="foto">
-				<p class="texto">CALIDAD</p>
-				<img src="img/8.jpg" alt="">
-			</div>
-		</section>
+                                                    <p>Estamos comprometidos a cumplir con las expectativas de nuestro
+                                                        cliente y que puedan hacerce mas conocidos por medio de su sitio
+                                                        web.</p>
+                                                </article>
+                                            </div>
+                                        </section>
 
-		<section class="contacto" id="contacto">
-			<div class="contenedor">
-				<section class="contacto">
-					<h3 class="titulo">Contacto</h3>
-					<form class="formulario" action="/enviar" method="POST">
-						<input type="text" placeholder="Nombre" name="nombre" required>
-						<input type="email" placeholder="Correo" name="correo" required>
-						<textarea name="mensaje" placeholder="Mensaje:"></textarea>
-						<input class="boton" type="submit" value="Enviar">
-					</form>
-				</section>
-			</div>
-		</section>
-	</section>
+                                        <section class="planes" id="planes">
+                                            <div class="contenedor">
+                                                <h3 class="titulo">Planes</h3>
+                                                <div class="contenedor-planes">
+                                                    <!-- Plan Individual -->
+                                                    <div class="card-plan fade-in">
+                                                        <p class="categoria">Pago único</p>
+                                                        <div class="contenido-plan">
+                                                            <h4 class="nombre">Acceso vitalicio a Davani Rentix</h4>
+                                                            <p class="precio">$1000</p>
+                                                            <ul class="beneficios">
+                                                                <li>Acceso completo a la plataforma para siempre.</li>
+                                                                <li>Un solo pago, sin mensualidades.</li>
+                                                                <li>Todos los beneficios de por vida.</li>
+                                                                <li>Ideal para compromiso a largo plazo.</li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
 
-	<footer>
-    <div class="contenedor">
-        <div class="footer-content">
-            <div class="copyright">
-                <p>&copy; 2025 DavaniTechnology. Todos los derechos reservados.</p>
-            </div>
-            <div class="social-media">
-                <a href="https://www.facebook.com/profile.php?id=61561619890202" target="_blank" class="social-icon" aria-label="Facebook">
-                    <i class="bi bi-facebook"></i> <!-- Icono de Facebook -->
-                </a>
-                <a href="https://www.tiktok.com/@technologydavani" target="_blank" class="social-icon" aria-label="TikTok">
-                    <i class="bi bi-tiktok"></i> <!-- Icono de TikTok -->
-                </a>
-            </div>
-        </div>
-    </div>
-</footer>
+                                                    <!-- Beneficios Plataforma -->
+                                                    <div class="card-beneficios fade-in">
+                                                        <h4 class="titulo-nota">Beneficios de la Plataforma</h4>
+                                                        <ul class="beneficios">
+                                                            <li><strong>Gestión de Capital Humano:</strong> Gestión de
+                                                                trabajadores con permisos específicos.</li>
+                                                            <li><strong>Gestión de Clientes:</strong> Información
+                                                                organizada para contacto e historial.</li>
+                                                            <li><strong>Gestión de Categorías:</strong> Administración
+                                                                de servicios ofrecidos.</li>
+                                                            <li><strong>Gestión de Servicios:</strong> Cliente,
+                                                                vendedor, ubicación y total de renta.</li>
+                                                            <li><strong>Servicios:</strong> Tickets personalizados con
+                                                                código QR único.</li>
+                                                            <li><strong>Datos Empresa:</strong> Información clave +
+                                                                página web con QR.</li>
+                                                            <li><strong>Notas:</strong> Bloc de notas especializado.
+                                                            </li>
+                                                            <li><strong>Recordatorios:</strong> Tareas con fecha de
+                                                                inicio y fin.</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </section>
 
 
 
+                                        <section class="informacion" id="informacion">
+                                            <h3 class="titulo fade-in">Información</h3>
 
-	<script src="js/jquery-1.12.3.min.js"></script>
-	<script src="js/parallax.js"></script>
-	<script src="js/efectos.js"></script>
-	<script async 
-src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8911862194691129"
-     crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                                            <div class="info-section fade-in">
+                                                <div class="text">
+                                                    <h2>Gestión de Capital Humano</h2>
+                                                    <p>Gestión de información de trabajadores o colegas con permisos
+                                                        específicos.</p>
+                                                </div>
+                                                <div class="image">
+                                                    <img src="/img/encargado.png" alt="Gestión de Capital Humano">
+                                                </div>
+                                            </div>
+
+                                            <div class="info-section reverse fade-in">
+                                                <div class="text">
+                                                    <h2>Gestión de Clientes</h2>
+                                                    <p>Mejor gestión de clientes con sus datos generales para
+                                                        contactarlos fácilmente y mantener un historial claro.</p>
+                                                </div>
+                                                <div class="image">
+                                                    <img src="/img/clientes.png" alt="Gestión de Clientes">
+                                                </div>
+                                            </div>
+
+                                            <div class="info-section fade-in">
+                                                <div class="text">
+                                                    <h2>Gestión de Categorías</h2>
+                                                    <p>Gestione las categorías o servicios que ofrece de forma ordenada.
+                                                    </p>
+                                                </div>
+                                                <div class="image">
+                                                    <img src="/img/categorias.png" alt="Gestión de Categorías">
+                                                </div>
+                                            </div>
+
+                                            <div class="info-section reverse fade-in">
+                                                <div class="text">
+                                                    <h2>Gestión de Servicios</h2>
+                                                    <p>Administre sus servicios, seleccione cliente, vendedor, ubicación
+                                                        y fecha de entrega. Visualice el total de renta fácilmente.</p>
+                                                </div>
+                                                <div class="image">
+                                                    <img src="/img/servicios.png" alt="Gestión de Servicios">
+                                                </div>
+                                            </div>
+
+                                            <div class="info-section fade-in">
+                                                <div class="text">
+                                                    <h2>Servicios con Tickets y QR</h2>
+                                                    <p>Genere tickets personalizados con código QR único para cada
+                                                        servicio de venta o renta. Ofrezca una página especial de
+                                                        consulta al cliente con toda la información del servicio.</p>
+                                                </div>
+                                                <div class="image">
+                                                    <img src="/img/ticket.png" alt="Servicios y Tickets">
+                                                </div>
+                                            </div>
+
+                                            <div class="info-section reverse fade-in">
+                                                <div class="text">
+                                                    <h2>Datos de la Empresa</h2>
+                                                    <p>Gestione datos como logo, descripción, rubro, ubicación, horario,
+                                                        teléfono, correo y redes sociales.</p>
+                                                    <strong>Además, cree una página web única para su empresa con opción
+                                                        de compartir mediante un código QR en imagen.</strong>
+                                                </div>
+                                                <div class="image">
+                                                    <img src="/img/empresa.png" alt="Datos de Empresa">
+                                                </div>
+                                            </div>
+
+                                            <div class="info-section fade-in">
+                                                <div class="text">
+                                                    <h2>Notas</h2>
+                                                    <p>Utilice un bloc de notas especializado para guardar ideas o lo
+                                                        que desee.</p>
+                                                </div>
+                                                <div class="image">
+                                                    <img src="/img/notas.png" alt="Notas">
+                                                </div>
+                                            </div>
+
+                                            <div class="info-section reverse fade-in">
+                                                <div class="text">
+                                                    <h2>Recordatorios</h2>
+                                                    <p>Cree recordatorios con fecha de inicio y fin. Si no se logra la
+                                                        meta a tiempo, se mostrará en la pantalla principal.</p>
+                                                </div>
+                                                <div class="image">
+                                                    <img src="/img/recordatorio.png" alt="Recordatorios">
+                                                </div>
+                                            </div>
+                                        </section>
+
+
+                                        <section class="galeria" id="galeria">
+                                            <h3 class="galeria__titulo">Valores</h3>
+                                            <div class="galeria__grid">
+                                                <div class="galeria__foto fade-in">
+                                                    <img src="img/1.jpg" alt="Puntualidad">
+                                                    <p class="galeria__texto">PUNTUALIDAD</p>
+                                                </div>
+                                                <div class="galeria__foto fade-in">
+                                                    <img src="img/2.jpg" alt="Respeto">
+                                                    <p class="galeria__texto">RESPETO</p>
+                                                </div>
+                                                <div class="galeria__foto fade-in">
+                                                    <img src="img/3.jpg" alt="Colaboración">
+                                                    <p class="galeria__texto">COLABORACIÓN</p>
+                                                </div>
+                                                <div class="galeria__foto fade-in">
+                                                    <img src="img/4.jpg" alt="Organización">
+                                                    <p class="galeria__texto">ORGANIZACIÓN</p>
+                                                </div>
+                                                <div class="galeria__foto fade-in">
+                                                    <img src="img/5.jpg" alt="Agilidad">
+                                                    <p class="galeria__texto">AGILIDAD</p>
+                                                </div>
+                                                <div class="galeria__foto fade-in">
+                                                    <img src="img/6.jpg" alt="Innovación">
+                                                    <p class="galeria__texto">INNOVACIÓN</p>
+                                                </div>
+                                                <div class="galeria__foto fade-in">
+                                                    <img src="img/7.jpg" alt="Orientación">
+                                                    <p class="galeria__texto">ORIENTACIÓN</p>
+                                                </div>
+                                                <div class="galeria__foto fade-in">
+                                                    <img src="img/8.jpg" alt="Calidad">
+                                                    <p class="galeria__texto">CALIDAD</p>
+                                                </div>
+                                            </div>
+                                        </section>
+
+
+
+                                        <section class="contacto" id="contacto">
+                                            <div class="contenedor">
+                                                <section class="contacto">
+                                                    <h3 class="titulo">Contacto</h3>
+                                                    <form class="formulario" action="/enviar" method="POST">
+                                                        <input type="text" placeholder="Nombre" name="nombre" required>
+                                                        <input type="email" placeholder="Correo" name="correo" required>
+                                                        <textarea name="mensaje" placeholder="Mensaje:"></textarea>
+                                                        <input class="boton" type="submit" value="Enviar">
+                                                    </form>
+                                                </section>
+                                            </div>
+                                        </section>
+                                    </section>
+
+                                    <footer>
+                                        <div class="contenedor">
+                                            <div class="footer-content">
+                                                <div class="copyright">
+                                                    <p>&copy; 2025 DavaniTechnology. Todos los derechos reservados.</p>
+                                                </div>
+                                                <div class="social-media">
+                                                    <a href="https://www.facebook.com/profile.php?id=61561619890202"
+                                                        target="_blank" class="social-icon" aria-label="Facebook">
+                                                        <i class="bi bi-facebook"></i> <!-- Icono de Facebook -->
+                                                    </a>
+                                                    <a href="https://www.tiktok.com/@technologydavani" target="_blank"
+                                                        class="social-icon" aria-label="TikTok">
+                                                        <i class="bi bi-tiktok"></i> <!-- Icono de TikTok -->
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </footer>
+
+                                    <script>
+                                        const fadeEls = document.querySelectorAll('.fade-in');
+                                        const galeriaElements = document.querySelectorAll('.galeria__foto.fade-in');
+
+                                        const observer = new IntersectionObserver(entries => {
+                                            entries.forEach(entry => {
+                                                if (entry.isIntersecting) {
+                                                    entry.target.classList.add('visible');
+                                                }
+                                            });
+                                        }, { threshold: 0.2 });
+
+                                        fadeEls.forEach(el => observer.observe(el));
+                                        galeriaElements.forEach(el => observer.observe(el));
+                                    </script>
+
+                                    <script src="js/jquery-1.12.3.min.js"></script>
+                                    <script src="js/parallax.js"></script>
+                                    <script src="js/efectos.js"></script>
+                                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8911862194691129" crossorigin="anonymous"></script>
+                                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

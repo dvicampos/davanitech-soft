@@ -1,0 +1,11 @@
+# robots.txt para DavaniTechnology
+User-agent: *
+Disallow: /admin/
+Disallow: /login/
+Disallow: /private/
+Disallow: /tmp/
+
+# Permitimos todo lo demás
+Allow: /
+
+Sitemap: https://davanitechnology.com/sitemap.xml

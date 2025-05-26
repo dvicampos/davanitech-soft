@@ -11,6 +11,10 @@ exports.index = (req, res) => {
     res.render('inicio', {layout: false});
 }
 
+exports.servicios = (req, res) => {
+    res.render('servicios', {layout: false});
+}
+
 exports.dashboard = (req, res) => {
     if (!req.session.encargado || !req.session.encargado.grupo_id) {
         return res.redirect('/login');
