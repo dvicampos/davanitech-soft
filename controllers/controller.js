@@ -279,7 +279,8 @@ exports.showGroup = (req, res) => {
 
     const queryGrupo = 'SELECT * FROM grupos WHERE id = ?';
     const queryMedia = 'SELECT * FROM media WHERE grupo_id = ?';
-    const queryBlogs = 'SELECT * FROM publicaciones_blog WHERE grupo_id = ? ORDER BY fecha DESC'; // o el nombre de tu tabla de blogs
+    const queryBlogs = 'SELECT * FROM publicaciones_blog WHERE grupo_id = ? ORDER BY fecha DESC';
+    const queryCategorias = 'SELECT * FROM categorias WHERE grupo_id = ?'; // <-- NUEVA CONSULTA
 
     db.query(queryGrupo, [grupo_id], (err, grupoResults) => {
         if (err) {
@@ -293,30 +294,37 @@ exports.showGroup = (req, res) => {
 
         const grupo = grupoResults[0];
 
-        // Consultar multimedia
         db.query(queryMedia, [grupo_id], (err, mediaResults) => {
             if (err) {
                 console.error('Error al obtener archivos multimedia:', err);
                 return res.render('mensaje', { layout: false, mensaje: 'Error al obtener archivos multimedia.', tipo: 'error' });
             }
 
-            // Consultar publicaciones del blog
             db.query(queryBlogs, [grupo_id], (err, blogResults) => {
                 if (err) {
                     console.error('Error al obtener publicaciones del blog:', err);
                     return res.render('mensaje', { layout: false, mensaje: 'Error al obtener publicaciones.', tipo: 'error' });
                 }
 
-                res.render('grupo', {
-                    layout: false,
-                    grupo,
-                    media: mediaResults,
-                    blogs: blogResults
+                db.query(queryCategorias, [grupo_id], (err, categoriasResults) => {
+                    if (err) {
+                        console.error('Error al obtener categorías:', err);
+                        return res.render('mensaje', { layout: false, mensaje: 'Error al obtener categorías.', tipo: 'error' });
+                    }
+
+                    res.render('grupo', {
+                        layout: false,
+                        grupo,
+                        media: mediaResults,
+                        blogs: blogResults,
+                        categorias: categoriasResults
+                    });
                 });
             });
         });
     });
 };
+
 
 
 exports.downloadQRCode = (req, res) => {

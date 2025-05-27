@@ -31,91 +31,179 @@
     </script>
 
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-        }
+        body::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: radial-gradient(circle at top left, rgba(0,0,0,0.05), transparent),
+                    radial-gradient(circle at bottom right, rgba(0,0,0,0.05), transparent);
+        z-index: -1;
+        animation: moveBg 30s linear infinite;
+    }
+
+    @keyframes moveBg {
+        0% { background-position: 0 0, 100% 100%; }
+        100% { background-position: 100% 100%, 0 0; }
+    }
+
+
         header {
             text-align: center;
             padding: 30px 20px;
             color: white;
+            background: linear-gradient(135deg, <%= grupo.color_grupo %>, #333);
+            transition: background-color 0.5s ease;
         }
+
         header h1 {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
+            font-weight: 600;
             margin-bottom: 10px;
+            animation: fadeInDown 1s;
         }
+
         header img {
             width: 120px;
             height: 120px;
             border-radius: 50%;
             border: 5px solid white;
             margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 1s;
         }
+
         section {
-            padding: 20px;
+            padding: 50px 20px;
             text-align: center;
         }
+
+        h2, h3 {
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
         .empresa-info {
-            margin-top: 20px;
+            max-width: 800px;
+            margin: auto;
             font-size: 1.1rem;
             line-height: 1.8;
             color: #555;
         }
+
         .empresa-info p {
             margin: 10px 0;
         }
-        .social-links {
-            margin-top: 40px;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
+
         .social-links a {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             padding: 10px 20px;
-            font-size: 20px;
-            text-decoration: none;
+            font-size: 18px;
             color: white;
-            border-radius: 5px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
         }
-        .btn-facebook {
-            background-color: #3b5998;
-        }
-        .btn-tiktok {
-            background-color: #ff0050;
-        }
-        .btn-facebook:hover, .btn-tiktok:hover {
+
+        .social-links a:hover {
+            transform: scale(1.05);
             opacity: 0.9;
         }
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 15px 10px;
-            margin-top: 30px;
-            font-size: 0.9rem;
+
+        .social{
+            padding: 0px;
         }
+
+        .btn-facebook { background-color: #3b5998; }
+        .btn-tiktok { background-color: #ff0050; }
+
         .whatsapp-btn {
             position: fixed;
             bottom: 20px;
             right: 20px;
+            width: 60px;
+            height: 60px;
             background-color: #25D366;
             color: white;
-            padding: 15px 20px;
             border-radius: 50%;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-            text-decoration: none;
-            font-size: 24px;
+            box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.3);
+            font-size: 28px;
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+
         .whatsapp-btn:hover {
+            transform: scale(1.1);
             background-color: #1ebe5b;
         }
-        .whatsapp-btn i {
-            margin-right: 5px;
+
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        footer {
+            background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+            color: #fff;
+            padding: 40px 20px;
+            text-align: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        footer h4 {
+            margin-bottom: 20px;
+            font-size: 22px;
+            color: #25D366;
+        }
+
+        footer a {
+            color: #0baea0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: #fff;
+        }
+
+        footer .social-icons {
+            margin-top: 20px;
+        }
+
+        footer .social-icons a {
+            margin: 0 8px;
+            font-size: 22px;
+            color: #25D366;
+            transition: transform 0.3s ease;
+        }
+
+        footer .social-icons a:hover {
+            transform: scale(1.2);
+            color: #fff;
+        }
+
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
+
 </head>
 <body>
 
@@ -127,11 +215,11 @@
     <p><strong>Servicios:</strong> <%= grupo.rubro %></p>
 </header>
 
-<section>
+<section data-aos="fade-up">
     <h2>Sobre nosotros</h2>
     <div class="empresa-info">
         <p><strong>Descripcion:</strong>
-	<p><%= grupo.descripcion %></p>
+	    <p><%= grupo.descripcion %></p>
         <p><strong>Ubicación:</strong> <%= grupo.ubicacion %></p>
         <p><strong>Horario:</strong> <%= grupo.horario %></p>
         <p><strong>Teléfono:</strong> <%= grupo.telefono %></p>
@@ -161,7 +249,7 @@
 </section>
 <% } %>
 
-<section>
+<section data-aos="zoom-in">
     <h2 class="mt-5">Galería</h2>
     <div class="container">
         <div class="row justify-content-around">
@@ -170,8 +258,7 @@
                     <div class="col-md-4 mb-4">
                         <div class="card shadow-sm">
                             <% if (item.tipo === 'imagen') { %>
-                                <img src="/<%= item.archivo %>" class="card-img-top" alt="Imagen del 
-grupo">
+                                <img src="/<%= item.archivo %>" class="card-img-top" alt="Imagen del grupo">
                             <% } else if (item.tipo === 'video') { %>
                                 <video controls class="w-100">
                                     <source src="/<%= item.archivo %>" type="video/mp4">
@@ -186,23 +273,8 @@ grupo">
             <% } %>
         </div>
     </div>
-</section
-
-<section>
-    <h2 class="text-center">Conéctate con nosotros</h2>
-    <div class="social-links">
-        <% if (grupo.facebook) { %>
-            <a href="<%= grupo.facebook %>" target="_blank" class="btn-facebook">
-                <i class="bi bi-facebook"></i> Facebook
-            </a>
-        <% } %>
-        <% if (grupo.tiktok) { %>
-            <a href="<%= grupo.tiktok %>" target="_blank" class="btn-tiktok">
-                <i class="bi bi-tiktok"></i> TikTok
-            </a>
-        <% } %>
-    </div>
 </section>
+
 <% if (success && success.length > 0) { %>
     <% success.forEach(function(msg) { %>
         <div class="alert alert-success alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 1050; min-width: 250px;" role="alert">
@@ -220,9 +292,55 @@ grupo">
         </div>
     <% }) %>
 <% } %>
+
+<section class="py-5" data-aos="fade-up">
+    <% if (categorias && categorias.length > 0) { %>
+        <div class="alert alert-info d-flex align-items-center p-4 rounded shadow-sm mt-4" role="alert">
+            <i class="bi bi-info-circle-fill me-3 fs-3 text-primary"></i>
+            <div>
+                <h5 class="mb-1 fw-bold">Cotiza fácilmente tus productos</h5>
+                <p class="mb-0">Selecciona la cantidad de los artículos que deseas pedir información y haz clic en <strong>"Cotizar por WhatsApp"</strong>. Nuestro equipo te responderá lo antes posible.</p>
+            </div>
+        </div>
+        
+        <form id="form-cotizar" class="p-4 rounded shadow bg-light mt-3">
+            <div class="row g-3">
+                <% categorias.forEach(cat => { %>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label fw-bold">
+                                <%= cat.nombre %>
+                            </label>
+                            <input 
+                            type="number" 
+                            class="form-control" 
+                            name="categoria_<%= cat.nombre %>" 
+                            min="0" 
+                            placeholder="Cantidad">
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+            <div class="text-end mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-whatsapp"></i> Cotizar por WhatsApp
+                </button>
+            </div>
+        </form>
+    <% } else { %>
+        <div class="alert alert-warning p-4 rounded shadow-sm mt-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-3 fs-3 text-warning"></i>
+            <div>
+                <h5 class="mb-1 fw-bold">No hay productos disponibles</h5>
+                <p class="mb-0">Actualmente no tenemos productos para cotizar. Por favor, vuelve más tarde.</p>
+            </div>
+        </div>
+    <% } %>
+</section>
+
 <section class="py-5">
     <div class="container">
-        <h2 class="text-center mb-4 text-primary fw-bold">Contáctanos directamente</h2>
+        <h2 class="text-center mb-4 text-primary fw-bold">📩 ¿Tienes dudas? Estamos aquí para ayudarte</h2>
         
         <div class="card shadow">
             <div class="card-body p-4">
@@ -290,6 +408,20 @@ grupo">
 <footer>
     <p>© <%= new Date().getFullYear() %> <%= grupo.nombre_empresa %>. Impulsado por <a target="_blank" href="https://davanitechnology.com/">Davani Technology</a> - Todos los derechos reservados.</p>
     <p><strong>Términos y Condiciones:</strong> <%= grupo.terminos %></p>
+    <section class="social" data-aos="fade-up">
+        <div class="social-links">
+            <% if (grupo.facebook) { %>
+                <a href="<%= grupo.facebook %>" target="_blank" class="btn-facebook">
+                    <i class="bi bi-facebook"></i> Facebook
+                </a>
+            <% } %>
+            <% if (grupo.tiktok) { %>
+                <a href="<%= grupo.tiktok %>" target="_blank" class="btn-tiktok">
+                    <i class="bi bi-tiktok"></i> TikTok
+                </a>
+            <% } %>
+        </div>
+    </section>
 </footer>
 
 <% if (grupo.telefono) { %>
@@ -310,8 +442,31 @@ grupo">
 
     const luminance = getLuminance(bgColor);
     header.style.color = luminance < 128 ? '#ffffff' : '#000000';
+    document.getElementById('form-cotizar').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = new FormData(this);
+    let mensaje = "Hola <%= grupo.nombre_empresa %>, quiero cotizar los siguientes productos:\n";
+    form.forEach((valor, clave) => {
+        if (parseInt(valor) > 0) {
+        const nombre = clave.replace("categoria_", "");
+        mensaje += `| ${nombre}: ${valor} unidades\n`;
+        }
+    });
+
+    const numero = "<%= grupo.telefono.replace(/[^0-9]/g, '') %>";
+    const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, '_blank');
+    });
+
 </script>
 
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script>
+  AOS.init({
+    duration: 800,
+    once: true
+  });
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.min.js"></script>
